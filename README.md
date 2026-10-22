@@ -5,7 +5,7 @@ of Health Data Science student (UNSW). Built with plain HTML + Tailwind CSS
 (Play CDN), dark terminal-style, no build step, ready to deploy to Vercel in
 one click.
 
-> **Live demo:** `https://<your-project>.vercel.app/` (update after first deploy)
+> **Live demo:** https://leo-lei-portfolio.vercel.app/
 
 ## Features
 
