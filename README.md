@@ -95,6 +95,13 @@ then commit and push — Vercel redeploys automatically on push.
 - Vanilla JavaScript (scroll progress + mobile menu)
 - [Vercel](https://vercel.com) for hosting
 
+## Roadmap (planned upgrade)
+
+This repo currently ships a static single-file site. A full **Next.js 15** rebuild
+is planned with: timeline resume, filterable data-science project gallery, MBTI &
+skill radar dashboard, hobby masonry gallery, and a Notion-powered markdown blog
+(Tailwind CSS v4, Framer Motion, Recharts, Notion API).
+
 ## License
 
 MIT — add a `LICENSE` file to the repo if you want to formalise it.
