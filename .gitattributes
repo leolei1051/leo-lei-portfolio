@@ -1,0 +1,2 @@
+# Treat binaries as binary — prevent line-ending normalization from corrupting them
+*.pdf binary
