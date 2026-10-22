@@ -232,12 +232,12 @@ Yahoo benchmarks  ──▶  baseline / model  ──▶  walk-forward backtest
           </p>
         </div>
 
-        <h3 class="mt-8 font-mono text-xs uppercase tracking-widest text-faint">Data-layer verification (NVIDIA, CIK 1045810)</h3>
+        <h3 class="mt-8 font-mono text-xs uppercase tracking-widest text-faint">Data-layer verification</h3>
         <p class="mt-3 max-w-3xl text-sm leading-relaxed text-mute">
-          The extractor was run against the archived NVIDIA <span class="font-mono text-xs">companyfacts</span> snapshot. From the
-          tag <span class="font-mono text-xs">RevenueFromContractWithCustomerExcludingAssessedTax</span> it identifies 16 quarterly
-          revenue periods spanning 2017-04-30 → 2020-01-26 — ending where NVIDIA switched its revenue tag,
-          which is exactly the tag-drift case the merge logic is built for. Latest quarters recovered:
+          Run in a clean environment (Python 3.12, <span class="font-mono text-xs">requests</span> only), the extractor
+          recovers <strong class="text-paper">73 quarterly revenue periods for NVIDIA (CIK 1045810)</strong>, spanning
+          2008Q3 → 2026Q3, merged from 2 revenue tags (NVIDIA switched tags mid-history), including 6 derived
+          fiscal-Q4 figures. A fresh network fetch of AMD (CIK 2488) recovers 68 quarters. Latest NVIDIA quarters:
         </p>
 
         <div class="mt-4 overflow-x-auto rounded border border-line">
@@ -246,21 +246,21 @@ Yahoo benchmarks  ──▶  baseline / model  ──▶  walk-forward backtest
               <tr>
                 <th class="px-4 py-2 font-normal uppercase tracking-wider">Period end</th>
                 <th class="px-4 py-2 font-normal uppercase tracking-wider">Revenue (USD)</th>
-                <th class="px-4 py-2 font-normal uppercase tracking-wider">Filing</th>
+                <th class="px-4 py-2 font-normal uppercase tracking-wider">Basis</th>
               </tr>
             </thead>
             <tbody class="text-paper">
-              <tr class="border-b border-line"><td class="px-4 py-2">2019-01-27</td><td class="px-4 py-2">$2,205 M</td><td class="px-4 py-2 text-mute">10-K</td></tr>
-              <tr class="border-b border-line"><td class="px-4 py-2">2019-04-28</td><td class="px-4 py-2">$2,220 M</td><td class="px-4 py-2 text-mute">10-K</td></tr>
-              <tr class="border-b border-line"><td class="px-4 py-2">2019-07-28</td><td class="px-4 py-2">$2,579 M</td><td class="px-4 py-2 text-mute">10-K</td></tr>
-              <tr class="border-b border-line"><td class="px-4 py-2">2019-10-27</td><td class="px-4 py-2">$3,014 M</td><td class="px-4 py-2 text-mute">10-K</td></tr>
-              <tr><td class="px-4 py-2">2020-01-26</td><td class="px-4 py-2">$3,105 M</td><td class="px-4 py-2 text-mute">10-K</td></tr>
+              <tr class="border-b border-line"><td class="px-4 py-2">2025-07-27 (2025Q3)</td><td class="px-4 py-2">$46.743B</td><td class="px-4 py-2 text-mute">filed</td></tr>
+              <tr class="border-b border-line"><td class="px-4 py-2">2025-10-26 (2025Q4)</td><td class="px-4 py-2">$57.006B</td><td class="px-4 py-2 text-mute">filed</td></tr>
+              <tr class="border-b border-line"><td class="px-4 py-2">2026-01-25 (2026Q1)</td><td class="px-4 py-2">$68.127B</td><td class="px-4 py-2 text-mute">derived Q4</td></tr>
+              <tr class="border-b border-line"><td class="px-4 py-2">2026-04-26 (2026Q2)</td><td class="px-4 py-2">$81.615B</td><td class="px-4 py-2 text-mute">filed</td></tr>
+              <tr><td class="px-4 py-2">2026-07-26 (2026Q3)</td><td class="px-4 py-2">$96.221B</td><td class="px-4 py-2 text-mute">filed</td></tr>
             </tbody>
           </table>
         </div>
         <p class="mt-3 max-w-3xl text-xs leading-relaxed text-faint">
-          Values are the raw filed figures recovered from the archived snapshot; the Q4-derivation step is
-          not reflected in this table. This is a data-extraction result, not a forecast.
+          "Derived Q4" = 10-K annual − sum of the three prior filed quarters. This is a data-extraction
+          result, not a forecast — no forecasting or backtest metrics are reported.
         </p>
       </div>
     </section>

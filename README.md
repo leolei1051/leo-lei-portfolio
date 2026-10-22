@@ -90,6 +90,22 @@ git push -u origin main
 Replace `assets/Leo_Lei_Resume.pdf` with an updated PDF (keep the same filename),
 then commit and push — Vercel redeploys automatically on push.
 
+## Maintenance
+
+**Iterate:** edit `index.html` / `forecast.html` → preview locally
+(`python -m http.server 8000`) → commit → push (Vercel auto-redeploys).
+
+**Self-check:** `bash check.sh` verifies files, placeholders, internal links,
+key content markers and the resume PDF. Run it before committing.
+
+**Known trade-offs (recorded deliberately):**
+- **Tailwind Play CDN** — a runtime dependency (not the production-recommended build),
+  chosen for a zero-build, one-file deploy. Revisit (precompile CSS) if offline
+  rendering or production strictness becomes a requirement.
+- **Shared `<head>` duplicated** between `index.html` and `forecast.html` — any
+  change to colors/scripts must be made in both files. Extract into a shared file
+  if drift becomes painful.
+
 ## Tech stack
 
 - HTML5 (semantic markup)
