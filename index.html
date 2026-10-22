@@ -282,53 +282,38 @@
             <p class="font-mono text-xs uppercase tracking-widest text-accent">03 · Projects</p>
             <h2 class="mt-3 text-3xl font-bold uppercase tracking-tight sm:text-4xl">Things being built</h2>
           </div>
-          <span class="font-mono text-xs uppercase tracking-widest text-faint">03 / 03</span>
+          <span class="font-mono text-xs uppercase tracking-widest text-faint">02 featured</span>
         </div>
 
-        <div class="mt-10 grid gap-6 md:grid-cols-3">
-          <!-- P-01 -->
+        <div class="mt-10 grid gap-6 md:grid-cols-2">
+          <!-- P-01 semiconductor-forecast -->
           <article class="flex flex-col rounded border border-line bg-panel p-6 transition hover:border-accent/60">
             <div class="flex items-center justify-between font-mono text-[11px] uppercase tracking-widest text-faint">
               <span>P-01</span>
-              <span class="flex items-center gap-1.5 text-accent"><i class="led inline-block h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true"></i>Live</span>
-            </div>
-            <h3 class="mt-4 text-lg font-semibold">semiconductor-monitor</h3>
-            <p class="mt-3 flex-1 text-sm leading-relaxed text-mute">
-              Tracks UN Comtrade semiconductor trade flows against Yahoo Finance equity prices to build
-              a divergence / sentiment index that flags when market pricing detaches from trade fundamentals.
-            </p>
-            <ul class="mt-4 flex flex-wrap gap-2 font-mono text-[11px] uppercase tracking-wider text-mute">
-              <li class="rounded border border-line px-2 py-1">Python</li>
-              <li class="rounded border border-line px-2 py-1">pandas</li>
-              <li class="rounded border border-line px-2 py-1">SQLite</li>
-              <li class="rounded border border-line px-2 py-1">UN Comtrade</li>
-              <li class="rounded border border-line px-2 py-1">Yahoo Finance</li>
-            </ul>
-          </article>
-
-          <!-- P-02 -->
-          <article class="flex flex-col rounded border border-line bg-panel p-6 transition hover:border-accent/60">
-            <div class="flex items-center justify-between font-mono text-[11px] uppercase tracking-widest text-faint">
-              <span>P-02</span>
-              <span class="flex items-center gap-1.5 text-mute"><i class="led inline-block h-1.5 w-1.5 rounded-full bg-mute" aria-hidden="true"></i>WIP</span>
+              <span class="flex items-center gap-1.5 text-mute"><i class="led inline-block h-1.5 w-1.5 rounded-full bg-mute" aria-hidden="true"></i>In Progress</span>
             </div>
             <h3 class="mt-4 text-lg font-semibold">semiconductor-forecast</h3>
             <p class="mt-3 flex-1 text-sm leading-relaxed text-mute">
-              Extracts quarterly revenue from SEC EDGAR XBRL filings, reconstructs the fiscal Q4 figure,
-              and validates a walk-forward backtest design for out-of-sample revenue forecasting.
+              Extracts clean quarterly revenue from SEC EDGAR XBRL filings (including a derived fiscal Q4)
+              as the foundation for walk-forward revenue forecasting. Data layer built; the forecasting
+              model and backtest are in progress.
             </p>
             <ul class="mt-4 flex flex-wrap gap-2 font-mono text-[11px] uppercase tracking-wider text-mute">
               <li class="rounded border border-line px-2 py-1">Python</li>
-              <li class="rounded border border-line px-2 py-1">pandas</li>
               <li class="rounded border border-line px-2 py-1">XBRL</li>
+              <li class="rounded border border-line px-2 py-1">SQLite</li>
               <li class="rounded border border-line px-2 py-1">Forecasting</li>
             </ul>
+            <a href="forecast.html"
+               class="mt-5 inline-flex items-center gap-1 font-mono text-xs uppercase tracking-widest text-accent hover:text-paper">
+              Full write-up <span aria-hidden="true">→</span>
+            </a>
           </article>
 
-          <!-- P-03 -->
+          <!-- P-02 Portfolio site -->
           <article class="flex flex-col rounded border border-line bg-panel p-6 transition hover:border-accent/60">
             <div class="flex items-center justify-between font-mono text-[11px] uppercase tracking-widest text-faint">
-              <span>P-03</span>
+              <span>P-02</span>
               <span class="flex items-center gap-1.5 text-accent"><i class="led inline-block h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true"></i>Live</span>
             </div>
             <h3 class="mt-4 text-lg font-semibold">Portfolio site</h3>
@@ -347,6 +332,28 @@
               Live demo <span aria-hidden="true">→</span>
             </a>
           </article>
+        </div>
+
+        <!-- Archived -->
+        <div class="mt-14">
+          <p class="font-mono text-xs uppercase tracking-widest text-faint">Archived</p>
+          <div class="mt-4 grid gap-6 md:grid-cols-2">
+            <article class="flex flex-col rounded border border-line bg-panel/50 p-6 opacity-80">
+              <div class="flex items-center justify-between font-mono text-[11px] uppercase tracking-widest text-faint">
+                <span>semiconductor-monitor</span>
+                <span class="flex items-center gap-1.5 text-mute"><i class="led inline-block h-1.5 w-1.5 rounded-full bg-mute" aria-hidden="true"></i>Archived</span>
+              </div>
+              <p class="mt-3 flex-1 text-sm leading-relaxed text-mute">
+                Earlier exploration tracking UN Comtrade trade flows against Yahoo Finance equity prices
+                to build a divergence / sentiment index. Superseded by the forecast work; kept for reference.
+              </p>
+              <ul class="mt-4 flex flex-wrap gap-2 font-mono text-[11px] uppercase tracking-wider text-mute">
+                <li class="rounded border border-line px-2 py-1">Python</li>
+                <li class="rounded border border-line px-2 py-1">pandas</li>
+                <li class="rounded border border-line px-2 py-1">SQLite</li>
+              </ul>
+            </article>
+          </div>
         </div>
       </div>
     </section>

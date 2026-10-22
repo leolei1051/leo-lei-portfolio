@@ -1,6 +1,6 @@
 # Leo Lei — Data Analyst / Health Data Science Portfolio
 
-A single-file static portfolio for Leo Lei — a data analyst and Master
+A static portfolio for Leo Lei — a data analyst and Master
 of Health Data Science student (UNSW). Built with plain HTML + Tailwind CSS
 (Play CDN), dark terminal-style, no build step, ready to deploy to Vercel in
 one click.
@@ -12,7 +12,8 @@ one click.
 - **Responsive** — mobile-first layout with a collapsible nav that closes on navigation.
 - **Dark terminal aesthetic** — near-black `#050505` base, monospace micro-labels, stacked display headline, film-grain overlay and a marquee skills ticker.
 - **Scroll progress bar** — a thin accent bar tracks reading position.
-- **Project cards** — three featured projects with status, ID, tech-stack tags and links.
+- **Project cards** — two featured projects plus an archived one, each with status, ID and tech-stack tags.
+- **Project detail page** — a dedicated write-up for `semiconductor-forecast` (overview, data sources, methodology, results, limitations, links).
 - **CV download** — a "Download CV" button that serves `assets/Leo_Lei_Resume.pdf`.
 - **Accessible & SEO-friendly** — semantic HTML, skip link, ARIA states, Open Graph tags, inline favicon.
 
@@ -20,7 +21,8 @@ one click.
 
 ```
 resume-site/
-├── index.html          # the whole site (HTML + inline scripts + Tailwind classes)
+├── index.html          # the homepage (HTML + inline scripts + Tailwind classes)
+├── forecast.html       # semiconductor-forecast project detail page
 ├── vercel.json         # { "version": 2 }
 ├── README.md           # this file
 ├── .gitignore
@@ -28,12 +30,12 @@ resume-site/
     └── Leo_Lei_Resume.pdf   # the resume served by the download button
 ```
 
-## Adding project links & og:url (after first deploy)
+## Adding project GitHub links
 
-The project cards and `og:url` intentionally ship without links for now (the
-GitHub repos don't exist yet). No placeholders block deployment. After your
-first deploy, add the live URL to `og:url` in `<head>` and re-add a `GitHub →`
-link to each project card once the repos are created.
+The two semiconductor projects (`semiconductor-monitor` and `semiconductor-forecast`)
+don't have public GitHub repositories yet, so their cards link to the in-site
+detail page or show no link rather than a broken URL. Once the repos exist, add
+a `GitHub →` link to each card.
 
 ## Local preview
 
@@ -71,7 +73,7 @@ No environment variables or build commands are needed.
 cd "C:/Users/Matebook D16/Desktop/求职_工作/resume-site"
 
 git init -b main        # or: git init && git branch -M main
-git add index.html vercel.json README.md .gitignore assets/Leo_Lei_Resume.pdf
+git add index.html forecast.html vercel.json README.md .gitignore assets/Leo_Lei_Resume.pdf
 git status              # confirm only the intended files are staged
 git commit -m "feat: initial portfolio site for Leo Lei"
 
