@@ -1,5 +1,9 @@
 // Leo's Court — choreographed rally timeline.
 //
+// Coordinate convention: X = width, Y = height, Z = length. The table's long
+// axis runs along Z, the net spans X at Z = 0, and the players stand at the
+// +Z (near) and -Z (far) ends, rallying across the net along Z.
+//
 // The whole rally is data-driven: a list of ball waypoints (contacts and
 // bounces) plus the stroke that produced each contact. The ball follows
 // ballistic arcs between consecutive waypoints, so paddle-contact timing,
@@ -7,53 +11,55 @@
 // which is what keeps the loop seamless and the animation in sync.
 
 export const TABLE = {
-  length: 2.74,   // X axis
-  width: 1.525,   // Z axis
+  length: 2.74,   // Z axis
+  width: 1.525,   // X axis
   height: 0.76,   // top surface Y
   netHeight: 0.1525,
   netTop: 0.9125,
 };
 export const BALL_R = 0.02;
-export const RED_X = 1.6;    // red player root X (+X, serves)
-export const BLUE_X = -1.6;  // blue player root X (-X)
+export const RED_Z = 1.6;    // Fan Zhendong (red) — near end (+Z)
+export const BLUE_Z = -1.6;  // Ma Long (blue) — far end (-Z)
+export const RED_X = -0.28;  // near player, slightly screen-left
+export const BLUE_X = 0.28;  // far player, slightly screen-right
 export const GRAVITY = [0, -9.8, 0];
 
 export const RALLY_DURATION = 10.0;
 
 // Each stroke: when + who + where the paddle meets the ball.
 export const SHOTS = [
-  { t: 1.20, actor: "red",  stroke: "serve",    contact: { x: 0.95, y: 1.02, z: 0.05 } },
-  { t: 2.35, actor: "blue", stroke: "forehand", contact: { x: -0.90, y: 0.90, z: 0.15 } },
-  { t: 3.45, actor: "red",  stroke: "forehand", contact: { x: 0.90, y: 0.90, z: -0.12 } },
-  { t: 4.55, actor: "blue", stroke: "backhand", contact: { x: -0.88, y: 0.85, z: -0.18 } },
-  { t: 5.60, actor: "red",  stroke: "backhand", contact: { x: 0.88, y: 0.85, z: 0.15 } },
-  { t: 6.65, actor: "blue", stroke: "attack",   contact: { x: -0.80, y: 1.00, z: 0.00 } },
-  { t: 7.45, actor: "red",  stroke: "block",    contact: { x: 0.85, y: 0.85, z: 0.00 } },
-  { t: 8.45, actor: "blue", stroke: "push",     contact: { x: -0.85, y: 0.82, z: 0.00 } },
+  { t: 1.20, actor: "red",  stroke: "serve",    contact: { x: 0.05, y: 1.02, z: 0.95 } },
+  { t: 2.35, actor: "blue", stroke: "forehand", contact: { x: 0.15, y: 0.90, z: -0.90 } },
+  { t: 3.45, actor: "red",  stroke: "forehand", contact: { x: -0.12, y: 0.90, z: 0.90 } },
+  { t: 4.55, actor: "blue", stroke: "backhand", contact: { x: -0.18, y: 0.85, z: -0.88 } },
+  { t: 5.60, actor: "red",  stroke: "backhand", contact: { x: 0.15, y: 0.85, z: 0.88 } },
+  { t: 6.65, actor: "blue", stroke: "attack",   contact: { x: 0.00, y: 1.00, z: -0.80 } },
+  { t: 7.45, actor: "red",  stroke: "block",    contact: { x: 0.00, y: 0.85, z: 0.85 } },
+  { t: 8.45, actor: "blue", stroke: "push",     contact: { x: 0.00, y: 0.82, z: -0.85 } },
 ];
 
 // Ball waypoints: { t, x, y, z }. Contacts and bounces alternate; the first
 // and last waypoints coincide so the 10 s loop wraps seamlessly.
 const BALL_WAYPOINTS = [
-  { t: 0.00, x: 0.70, y: 1.20, z: 0.10 }, // ready (red holds)
-  { t: 0.60, x: 0.70, y: 1.55, z: 0.10 }, // toss
-  { t: 1.20, x: 0.95, y: 1.02, z: 0.05 }, // serve contact (red)
-  { t: 1.90, x: -0.55, y: 0.78, z: 0.00 }, // bounce (blue side)
-  { t: 2.35, x: -0.90, y: 0.90, z: 0.15 }, // blue forehand contact
-  { t: 3.05, x: 0.55, y: 0.78, z: -0.08 }, // bounce (red side)
-  { t: 3.45, x: 0.90, y: 0.90, z: -0.12 }, // red forehand contact
-  { t: 4.15, x: -0.60, y: 0.78, z: 0.10 }, // bounce (blue side)
-  { t: 4.55, x: -0.88, y: 0.85, z: -0.18 }, // blue backhand contact
-  { t: 5.25, x: 0.50, y: 0.78, z: 0.12 }, // bounce (red side)
-  { t: 5.60, x: 0.88, y: 0.85, z: 0.15 }, // red backhand contact
-  { t: 6.30, x: -0.50, y: 0.78, z: -0.05 }, // bounce (blue side)
-  { t: 6.65, x: -0.80, y: 1.00, z: 0.00 }, // blue attack contact
-  { t: 7.15, x: 0.45, y: 0.78, z: 0.00 }, // bounce (red side)
-  { t: 7.45, x: 0.85, y: 0.85, z: 0.00 }, // red block contact
-  { t: 8.10, x: -0.55, y: 0.78, z: 0.00 }, // bounce (blue side)
-  { t: 8.45, x: -0.85, y: 0.82, z: 0.00 }, // blue push contact
-  { t: 9.10, x: 0.70, y: 0.95, z: 0.05 }, // red catch
-  { t: 10.00, x: 0.70, y: 1.20, z: 0.10, hold: true }, // ready (held; == t 0)
+  { t: 0.00, x: -0.42, y: 1.20, z: 0.70 }, // ready (red holds)
+  { t: 0.60, x: -0.42, y: 1.55, z: 0.70 }, // toss
+  { t: 1.20, x: 0.05, y: 1.02, z: 0.95 }, // serve contact (red)
+  { t: 1.90, x: 0.00, y: 0.78, z: -0.55 }, // bounce (blue side)
+  { t: 2.35, x: 0.15, y: 0.90, z: -0.90 }, // blue forehand contact
+  { t: 3.05, x: -0.08, y: 0.78, z: 0.55 }, // bounce (red side)
+  { t: 3.45, x: -0.12, y: 0.90, z: 0.90 }, // red forehand contact
+  { t: 4.15, x: 0.10, y: 0.78, z: -0.60 }, // bounce (blue side)
+  { t: 4.55, x: -0.18, y: 0.85, z: -0.88 }, // blue backhand contact
+  { t: 5.25, x: 0.12, y: 0.78, z: 0.50 }, // bounce (red side)
+  { t: 5.60, x: 0.15, y: 0.85, z: 0.88 }, // red backhand contact
+  { t: 6.30, x: -0.05, y: 0.78, z: -0.50 }, // bounce (blue side)
+  { t: 6.65, x: 0.00, y: 1.00, z: -0.80 }, // blue attack contact
+  { t: 7.15, x: 0.00, y: 0.78, z: 0.45 }, // bounce (red side)
+  { t: 7.45, x: 0.00, y: 0.85, z: 0.85 }, // red block contact
+  { t: 8.10, x: 0.00, y: 0.78, z: -0.55 }, // bounce (blue side)
+  { t: 8.45, x: 0.00, y: 0.82, z: -0.85 }, // blue push contact
+  { t: 9.10, x: -0.42, y: 0.95, z: 0.70 }, // red catch
+  { t: 10.00, x: -0.42, y: 1.20, z: 0.70, hold: true }, // ready (held; == t 0)
 ];
 
 function wrap(t) {

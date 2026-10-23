@@ -2,7 +2,7 @@
 // modules (so a CDN failure degrades to a static fallback, never a blank page),
 // then runs the choreographed rally + orbit controls + HUD wiring.
 
-import { RALLY_DURATION, RED_X, BLUE_X, ballStateAt, activeShot, strokeProgress, CONTACT_EVENTS } from "./rally.js";
+import { RALLY_DURATION, RED_Z, BLUE_Z, RED_X, BLUE_X, ballStateAt, activeShot, strokeProgress, CONTACT_EVENTS } from "./rally.js";
 
 const THREE_URL = "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js";
 
@@ -56,23 +56,29 @@ function run(THREE, sceneMod, charMod, audioMod) {
   const { createCourtAudio } = audioMod;
   const audio = createCourtAudio();
 
-  const { renderer, scene, camera, ball, resize } = initScene(canvas);
+  const { renderer, scene, camera, ball, world, resize } = initScene(canvas);
   resize();
   window.addEventListener("resize", resize);
 
-  // Players: red at +X faces -X (rotate PI), blue at -X faces +X.
+  // Players: Fan (red) near +Z faces -Z; Ma (blue) far -Z faces +Z.
   const red = buildCharacter({ jersey: 0xff3b3b, hair: 0x8a1010, skin: 0xf0c8a0 });
-  red.root.position.set(RED_X, 0, 0);
-  red.root.rotation.y = Math.PI;
+  red.root.position.set(RED_X, 0, RED_Z);
+  red.root.rotation.y = Math.PI / 2;
   const blue = buildCharacter({ jersey: 0x3b6bff, hair: 0x0e2a7a, skin: 0xf0c8a0 });
-  blue.root.position.set(BLUE_X, 0, 0);
-  scene.add(red.root, blue.root);
+  blue.root.position.set(BLUE_X, 0, BLUE_Z);
+  blue.root.rotation.y = -Math.PI / 2;
+  world.add(red.root, blue.root);
 
   // ---- Camera / orbit state ----
-  const camTarget = new THREE.Vector3(0, 0.95, 0);
-  const REST = { theta: 0.42, phi: 1.08, radius: 5.9 };
-  const INTRO_START = { theta: 0.85, phi: 1.42, radius: 7.6 };
-  const LIMITS = { theta: [-0.66, 0.66], phi: [0.35, 1.26], radius: [3.6, 7.0] };
+  const camTarget = new THREE.Vector3(0, 0.75, 0);
+  const isMobile = window.matchMedia("(max-width: 640px)").matches;
+  const REST = isMobile
+    ? { theta: 0.10, phi: 1.05, radius: 8.0 }
+    : { theta: 0.103, phi: 1.130, radius: 6.45 };
+  const INTRO_START = { theta: 0.02, phi: 1.32, radius: 7.4 };
+  const LIMITS = isMobile
+    ? { theta: [-0.22, 0.22], phi: [0.95, 1.20], radius: [7.2, 9.0] }
+    : { theta: [-0.22, 0.22], phi: [1.00, 1.26], radius: [5.6, 7.3] };
 
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const cam = {
@@ -80,8 +86,14 @@ function run(THREE, sceneMod, charMod, audioMod) {
     phi: reducedMotion ? REST.phi : INTRO_START.phi,
     radius: reducedMotion ? REST.radius : INTRO_START.radius,
   };
-  const introDur = reducedMotion ? 0 : 2.7;
+  const introDur = (reducedMotion || isMobile) ? 0 : 2.7;
   let introT = 0;
+
+  function resetCam() {
+    cam.theta = REST.theta;
+    cam.phi = REST.phi;
+    cam.radius = REST.radius;
+  }
 
   function applyCamera() {
     const { theta, phi, radius } = cam;
@@ -124,7 +136,7 @@ function run(THREE, sceneMod, charMod, audioMod) {
   if (btnPlay) btnPlay.addEventListener("click", () => setPaused(!paused));
   if (btnSlow) btnSlow.addEventListener("click", () => setSlow(!slow));
   if (btnSound) btnSound.addEventListener("click", () => setSound(!audio.enabled));
-  if (btnReset) btnReset.addEventListener("click", () => { cam.theta = REST.theta; cam.phi = REST.phi; cam.radius = REST.radius; });
+  if (btnReset) btnReset.addEventListener("click", resetCam);
 
   // Hotspots -> modal
   const PANELS = {
@@ -248,7 +260,7 @@ function run(THREE, sceneMod, charMod, audioMod) {
     switch (e.code) {
       case "Space": e.preventDefault(); setPaused(!paused); break;
       case "KeyS": setSlow(!slow); break;
-      case "KeyR": cam.theta = REST.theta; cam.phi = REST.phi; cam.radius = REST.radius; break;
+      case "KeyR": resetCam(); break;
       case "KeyM": setSound(!audio.enabled); break;
     }
   });
@@ -260,18 +272,18 @@ function run(THREE, sceneMod, charMod, audioMod) {
     if (shot) {
       const prog = strokeProgress(shot, time);
       const C = new THREE.Vector3(shot.contact.x, shot.contact.y, shot.contact.z);
-      const sign = side === "red" ? -1 : 1; // red hits toward -X, blue toward +X
+      const sign = side === "red" ? -1 : 1; // red hits toward -Z, blue toward +Z
       // Aim the wrist so the paddle blade (0.13 m beyond the wrist) meets the ball.
-      const grip = C.clone().add(new THREE.Vector3(-sign * 0.13, 0.05, 0));
+      const grip = C.clone().add(new THREE.Vector3(0, 0.05, -sign * 0.13));
       if (prog && prog.stage === "windup") {
         const u = 1 - prog.u; // 1 at start (back), 0 at contact
-        pose.paddleTarget = grip.clone().add(new THREE.Vector3(-sign * 0.42 * u, 0.16 * u, 0));
+        pose.paddleTarget = grip.clone().add(new THREE.Vector3(0, 0.16 * u, -sign * 0.42 * u));
       } else if (prog && prog.stage === "follow") {
-        pose.paddleTarget = grip.clone().add(new THREE.Vector3(sign * 0.28 * prog.u, 0.04 * prog.u, 0));
+        pose.paddleTarget = grip.clone().add(new THREE.Vector3(0, 0.04 * prog.u, sign * 0.28 * prog.u));
       } else {
         pose.paddleTarget = grip;
       }
-      pose.torsoY = (shot.contact.z / 1.4) * 0.35;
+      pose.torsoY = (shot.contact.x / 0.6) * 0.35;
       pose.torsoX = 0.12;
       pose.crouch = -0.03;
     } else {
