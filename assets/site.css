@@ -1,0 +1,219 @@
+/* ============================================================
+   Leo's Workspace — shared design system
+   Black / green terminal aesthetic. Single source of truth for
+   the custom CSS previously duplicated between index.html and
+   forecast.html. Tailwind (Play CDN) handles utility classes;
+   this file handles tokens, components and motion.
+   ============================================================ */
+
+:root {
+  --ink: #050505;
+  --panel: #0c0c0c;
+  --panel-2: #101010;
+  --line: #2e2e2e;
+  --paper: #e9e9e2;
+  --mute: #8a8a8a;
+  --faint: #7a7a7a;
+  --accent: #4ade80;
+  --accent-dim: rgba(74, 222, 128, 0.14);
+  --accent-soft: rgba(74, 222, 128, 0.5);
+  --radius: 12px;
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.02) inset, 0 12px 32px -16px rgba(0, 0, 0, 0.9);
+  --shadow-glow: 0 0 0 1px rgba(74, 222, 128, 0.30), 0 0 28px -8px rgba(74, 222, 128, 0.35);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+html {
+  color-scheme: dark;
+  background-color: var(--ink);
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--ink);
+  color: var(--paper);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+::selection { background: var(--accent); color: var(--ink); }
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-thumb { background: #1e1e1e; border-radius: 999px; }
+::-webkit-scrollbar-track { background: var(--ink); }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+/* ------------------------------------------------------------
+   Film grain overlay
+   ------------------------------------------------------------ */
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+}
+
+/* ------------------------------------------------------------
+   Scroll progress bar + skip link
+   ------------------------------------------------------------ */
+#progress-bar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  z-index: 60;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  pointer-events: none;
+}
+
+.skiplink {
+  position: absolute;
+  left: 8px; top: 8px;
+  z-index: 70;
+  padding: 8px 16px;
+  border-radius: 4px;
+  background: var(--accent);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  transform: translateY(-160%);
+}
+.skiplink:focus { transform: translateY(0); }
+
+/* ------------------------------------------------------------
+   Keyframes
+   ------------------------------------------------------------ */
+@keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+
+.cursor { animation: blink 1.1s step-end infinite; }
+.led { animation: pulse 1.6s ease-in-out infinite; }
+.marquee-track { display: flex; width: max-content; animation: marquee 32s linear infinite; }
+
+/* ------------------------------------------------------------
+   Lobby scene (hero)
+   Pure CSS perspective grid + radial glow. Degrades to a flat
+   hero if transforms are unsupported; disabled under reduced
+   motion. Never blocks content — the copy sits above it.
+   ------------------------------------------------------------ */
+.lobby { position: relative; isolation: isolate; }
+
+.lobby-floor {
+  position: absolute;
+  left: -25%; right: -25%;
+  bottom: -2px;
+  height: 52%;
+  z-index: -2;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image:
+    linear-gradient(rgba(74, 222, 128, 0.20) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(74, 222, 128, 0.20) 1px, transparent 1px);
+  background-size: 46px 46px;
+  transform: perspective(620px) rotateX(62deg);
+  transform-origin: center bottom;
+  -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.95), transparent 88%);
+  mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.95), transparent 88%);
+}
+
+.lobby-glow {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(640px 320px at 50% 38%, var(--accent-dim), transparent 72%);
+}
+
+/* ------------------------------------------------------------
+   Scene entry cards (the "doors" into the workspace)
+   ------------------------------------------------------------ */
+.scene-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 176px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  box-shadow: var(--shadow-card);
+  text-decoration: none;
+  color: var(--paper);
+  transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+  overflow: hidden;
+}
+.scene-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(340px 120px at 50% 0%, var(--accent-dim), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.22s ease;
+}
+.scene-card:hover,
+.scene-card:focus-visible {
+  transform: translateY(-5px);
+  border-color: rgba(74, 222, 128, 0.55);
+  box-shadow: var(--shadow-glow);
+}
+.scene-card:hover::after,
+.scene-card:focus-visible::after { opacity: 1; }
+
+.scene-card .scene-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  color: var(--accent);
+  background: rgba(74, 222, 128, 0.06);
+  transition: transform 0.22s ease;
+}
+.scene-card:hover .scene-icon { transform: translateY(-2px); }
+
+/* ------------------------------------------------------------
+   Project cards + generated abstract covers
+   ------------------------------------------------------------ */
+.project-cover {
+  position: relative;
+  aspect-ratio: 5 / 3;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #070707;
+  overflow: hidden;
+}
+.project-cover svg { display: block; width: 100%; height: 100%; }
+
+/* ------------------------------------------------------------
+   Reveal-on-scroll (opt-in via html.js; never hides content
+   without JS, and disabled under reduced motion)
+   ------------------------------------------------------------ */
+html.js .reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1), transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+html.js .reveal.is-visible { opacity: 1; transform: none; }
+
+/* ------------------------------------------------------------
+   Reduced motion — kill every animation/transition and force
+   the reveal layer visible.
+   ------------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .marquee-track, .cursor, .led { animation: none; }
+  .scene-card, .scene-card .scene-icon { transition: none; }
+  .scene-card:hover, .scene-card:focus-visible,
+  .scene-card:hover .scene-icon { transform: none; }
+  html.js .reveal { opacity: 1; transform: none; transition: none; }
+}

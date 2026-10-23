@@ -1,2 +1,5 @@
 # Treat binaries as binary — prevent line-ending normalization from corrupting them
 *.pdf binary
+
+# Keep the self-check script runnable regardless of checkout platform
+*.sh text eol=lf

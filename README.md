@@ -9,24 +9,30 @@ one click.
 
 ## Features
 
-- **Responsive** — mobile-first layout with a collapsible nav that closes on navigation.
+- **"Leo's Workspace" lobby** — a scene-based hero (perspective grid floor + green glow) with four entry cards into About / Projects / Learning / Contact.
+- **Direct access** — View Projects, Download CV, GitHub and LinkedIn are reachable without any animation gate.
+- **Responsive** — mobile-first layout with a collapsible nav that closes on navigation; no horizontal overflow.
 - **Dark terminal aesthetic** — near-black `#050505` base, monospace micro-labels, stacked display headline, film-grain overlay and a marquee skills ticker.
 - **Scroll progress bar** — a thin accent bar tracks reading position.
-- **Project cards** — two featured projects plus an archived one, each with status, ID and tech-stack tags.
+- **Project cards** — two featured projects plus an archived one, each with a generated abstract SVG cover, status, ID and tech-stack tags. Public GitHub links are shown only where a public repo actually exists.
 - **Project detail page** — a dedicated write-up for `semiconductor-forecast` (overview, data sources, methodology, results, limitations, links).
 - **CV download** — a "Download CV" button that serves `assets/Leo_Lei_Resume.pdf`.
+- **Reduced motion & no-JS fallback** — `prefers-reduced-motion` disables animation, and all content renders without JavaScript.
 - **Accessible & SEO-friendly** — semantic HTML, skip link, ARIA states, Open Graph tags, inline favicon.
 
 ## Project structure
 
 ```
 resume-site/
-├── index.html          # the homepage (HTML + inline scripts + Tailwind classes)
+├── index.html          # the homepage (HTML + Tailwind classes)
 ├── forecast.html       # semiconductor-forecast project detail page
 ├── vercel.json         # { "version": 2 }
 ├── README.md           # this file
+├── check.sh            # self-check script
 ├── .gitignore
 └── assets/
+    ├── site.css        # shared design system (tokens, scene cards, grain, motion)
+    ├── site.js         # shared behaviour (progress bar, menu, reveal, tilt)
     └── Leo_Lei_Resume.pdf   # the resume served by the download button
 ```
 
@@ -102,20 +108,22 @@ key content markers and the resume PDF. Run it before committing.
 - **Tailwind Play CDN** — a runtime dependency (not the production-recommended build),
   chosen for a zero-build, one-file deploy. Revisit (precompile CSS) if offline
   rendering or production strictness becomes a requirement.
-- **Shared `<head>` duplicated** between `index.html` and `forecast.html` — any
-  change to colors/scripts must be made in both files. Extract into a shared file
-  if drift becomes painful.
+- **Shared design system** — custom CSS/JS now live in `assets/site.css` /
+  `assets/site.js` and are linked by both pages, but the `tailwind.config` block
+  is still duplicated inline in each page (required by the Play CDN load order).
 
 ## Tech stack
 
 - HTML5 (semantic markup)
-- [Tailwind CSS](https://tailwindcss.com) via Play CDN
-- Vanilla JavaScript (scroll progress + mobile menu)
+- [Tailwind CSS](https://tailwindcss.com) via Play CDN (utilities) + `assets/site.css` (design system)
+- Vanilla JavaScript (`assets/site.js` — scroll progress, mobile menu, scroll-reveal, guarded tilt)
+- Inline SVG for generated project covers (no image assets, no fake screenshots)
 - [Vercel](https://vercel.com) for hosting
 
 ## Roadmap (planned upgrade)
 
-This repo currently ships a static single-file site. A full **Next.js 15** rebuild
+This repo currently ships a static site with a shared CSS/JS design system
+(`assets/site.css` + `assets/site.js`). A full **Next.js 15** rebuild
 is planned with: timeline resume, filterable data-science project gallery, MBTI &
 skill radar dashboard, hobby masonry gallery, and a Notion-powered markdown blog
 (Tailwind CSS v4, Framer Motion, Recharts, Notion API).
