@@ -236,9 +236,10 @@
 @media (max-width: 640px) {
   .court-hero { height: 88vh; min-height: 480px; }
   .court-title { top: 10px; left: 10px; padding: 8px 10px; }
-  .court-badge { top: 10px; right: 10px; max-width: 170px; font-size: 9px; }
-  .court-enter { top: 10px; padding: 8px 14px; font-size: 11px; }
-  .court-hotspots { left: 10px; bottom: 78px; max-width: calc(100vw - 20px); }
-  .court-controls { bottom: 10px; gap: 5px; padding: 6px; }
+  .court-title .court-sub { display: none; }
+  .court-enter { top: 10px; left: auto; right: 10px; transform: none; padding: 8px 12px; font-size: 10px; }
+  .court-badge { top: 56px; left: 10px; right: 10px; max-width: none; font-size: 9px; text-align: center; }
+  .court-hotspots { left: 10px; right: 10px; bottom: 72px; max-width: none; }
+  .court-controls { bottom: 12px; gap: 5px; padding: 6px; }
   .court-btn { min-height: 38px; min-width: 38px; padding: 0 10px; font-size: 10px; }
 }
