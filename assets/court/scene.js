@@ -63,6 +63,7 @@ function makeTable() {
     new THREE.PlaneGeometry(W + 0.16, TABLE.netHeight),
     new THREE.MeshStandardMaterial({ map: netTex, transparent: true, alphaTest: 0.35, side: THREE.DoubleSide, roughness: 0.9 })
   );
+  net.rotation.y = Math.PI / 2; // span the table width (Z) at X = 0
   net.position.y = H + TABLE.netHeight / 2;
   net.receiveShadow = true;
   g.add(net);
@@ -150,6 +151,8 @@ export function initScene(canvas) {
     const h = canvas.clientHeight || canvas.parentElement.clientHeight || window.innerHeight;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
+    // Widen the vertical FOV on narrow/portrait screens so both players stay in frame.
+    camera.fov = camera.aspect < 0.8 ? 72 : 50;
     camera.updateProjectionMatrix();
   }
 

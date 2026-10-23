@@ -47,23 +47,33 @@ function box(w, h, d, color) {
   return mesh;
 }
 
+// A leg bone capsule along -Y, pivot at the top (extends downward).
+function legBone(radius, length, color) {
+  const geo = new THREE.CapsuleGeometry(radius, length, 4, 10);
+  geo.translate(0, -length / 2, 0);
+  const mesh = new THREE.Mesh(geo, mat(color));
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  return mesh;
+}
+
 function buildArm(sideZ, jersey, skin) {
   // sideZ: -0.26 (right, striking) or +0.26 (left, support)
   const shoulder = new THREE.Group();
   shoulder.position.set(0, 1.32, sideZ);
 
-  const upper = bone(0.045, 0.32, skin);
+  const upper = bone(0.05, 0.45, skin);
   shoulder.add(upper);
 
   const elbow = new THREE.Group();
-  elbow.position.set(0, 0, 0.32);
+  elbow.position.set(0, 0, 0.45);
   shoulder.add(elbow);
 
-  const forearm = bone(0.035, 0.30, skin);
+  const forearm = bone(0.04, 0.42, skin);
   elbow.add(forearm);
 
   const wrist = new THREE.Group();
-  wrist.position.set(0, 0, 0.30);
+  wrist.position.set(0, 0, 0.42);
   elbow.add(wrist);
 
   // Paddle: handle + blade, coloured by player.
@@ -84,21 +94,21 @@ export function buildCharacter(opts) {
 
   const root = new THREE.Group();
 
-  // ---- Legs (simple crouch stance) ----
+  // ---- Legs (simple crouch stance, capsules point down) ----
   const legs = new THREE.Group();
   const hipY = 0.92;
   for (const s of [-0.12, 0.12]) {
     const hip = new THREE.Group();
     hip.position.set(0, hipY, s);
-    const thigh = bone(0.055, 0.46, accent);
+    const thigh = legBone(0.055, 0.46, accent);
     hip.add(thigh);
     const knee = new THREE.Group();
     knee.position.set(0, -0.46, 0);
     knee.rotation.x = -0.22; // slight knee bend
     hip.add(knee);
-    const shin = bone(0.045, 0.46, accent);
+    const shin = legBone(0.045, 0.46, accent);
     knee.add(shin);
-    const foot = box(0.1, 0.05, 0.22, 0xffffff);
+    const foot = box(0.09, 0.05, 0.22, 0xffffff);
     foot.position.set(0, -0.46, 0.06);
     knee.add(foot);
     legs.add(hip);
@@ -203,18 +213,18 @@ export function updateCharacter(char, pose, dt) {
   const hasSupport = pose.supportTarget;
 
   if (hasStrike) {
-    aimArm(char.strike, pose.paddleTarget, 0.32, 0.30);
+    aimArm(char.strike, pose.paddleTarget, 0.45, 0.42);
   } else {
     // rest aim — paddle held forward, slightly down.
     const rest = char.root.localToWorld(new THREE.Vector3(1.15, 1.15, -0.15));
-    aimArm(char.strike, rest, 0.32, 0.30);
+    aimArm(char.strike, rest, 0.45, 0.42);
   }
 
   if (hasSupport) {
-    aimArm(char.support, pose.supportTarget, 0.32, 0.30);
+    aimArm(char.support, pose.supportTarget, 0.45, 0.42);
   } else {
     const rest = char.root.localToWorld(new THREE.Vector3(1.05, 1.1, 0.2));
-    aimArm(char.support, rest, 0.32, 0.30);
+    aimArm(char.support, rest, 0.45, 0.42);
   }
 
   // Body lean toward the action.

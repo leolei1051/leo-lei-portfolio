@@ -51,8 +51,10 @@ resume-site/
 ├── check.sh            # self-check script
 ├── .gitignore
 └── assets/
-    ├── site.css        # shared design system (tokens, scene cards, grain, motion)
-    ├── site.js         # shared behaviour (progress bar, menu, reveal, tilt)
+    ├── site.css        # shared design system (tokens, grain, motion)
+    ├── site.js         # shared behaviour (progress bar, menu, reveal)
+    ├── court.css       # 3D court hero (HUD, controls, modal, fallback)
+    ├── court/          # Three.js modules (main, scene, characters, rally, audio)
     └── Leo_Lei_Resume.pdf   # the resume served by the download button
 ```
 
@@ -109,7 +111,8 @@ git push -u origin main
 ```
 
 > Note: the legacy print-resume files (`quant.html`, `styles.css`, `styles-quant.css`)
-> are ignored via `.gitignore`, so `git add .` is also safe.
+> and the reference art (`assets/court/*.png`, real-person portraits with unknown
+> licence) are ignored via `.gitignore`, so `git add .` will not stage them.
 
 ## Updating your CV
 

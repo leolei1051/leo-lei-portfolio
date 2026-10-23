@@ -40,7 +40,11 @@ async function boot() {
     showFallback("3D module load failed: " + (e && e.message ? e.message : e));
     return;
   }
-  run(THREE, sceneMod, charMod, audioMod);
+  try {
+    run(THREE, sceneMod, charMod, audioMod);
+  } catch (e) {
+    showFallback("3D setup failed: " + (e && e.message ? e.message : e));
+  }
 }
 
 function run(THREE, sceneMod, charMod, audioMod) {
@@ -69,9 +73,13 @@ function run(THREE, sceneMod, charMod, audioMod) {
   const REST = { theta: 0.42, phi: 1.08, radius: 5.9 };
   const INTRO_START = { theta: 0.85, phi: 1.42, radius: 7.6 };
   const LIMITS = { theta: [-0.66, 0.66], phi: [0.35, 1.26], radius: [3.6, 7.0] };
-  const cam = { theta: INTRO_START.theta, phi: INTRO_START.phi, radius: INTRO_START.radius };
 
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const cam = {
+    theta: reducedMotion ? REST.theta : INTRO_START.theta,
+    phi: reducedMotion ? REST.phi : INTRO_START.phi,
+    radius: reducedMotion ? REST.radius : INTRO_START.radius,
+  };
   const introDur = reducedMotion ? 0 : 2.7;
   let introT = 0;
 
@@ -141,11 +149,13 @@ function run(THREE, sceneMod, charMod, audioMod) {
   };
 
   let resumeAfterModal = paused;
+  let lastFocused = null;
   function openPanel(key) {
     const p = PANELS[key];
     if (!p) return;
     resumeAfterModal = paused;
     setPaused(true);
+    lastFocused = document.activeElement;
     $("#court-modal-title").textContent = p.title;
     const list = $("#court-modal-list");
     list.innerHTML = "";
@@ -160,10 +170,13 @@ function run(THREE, sceneMod, charMod, audioMod) {
       list.appendChild(li);
     });
     modal.hidden = false;
+    const close = $("#court-modal-close");
+    if (close) close.focus();
   }
   function closePanel() {
     modal.hidden = true;
     setPaused(resumeAfterModal);
+    if (lastFocused && lastFocused.focus) lastFocused.focus();
   }
   $all(".court-hotspot").forEach((b) => b.addEventListener("click", () => openPanel(b.dataset.panel)));
   $("#court-modal-close").addEventListener("click", closePanel);
@@ -221,12 +234,17 @@ function run(THREE, sceneMod, charMod, audioMod) {
   canvas.addEventListener("pointerup", endPointer);
   canvas.addEventListener("pointercancel", endPointer);
   canvas.addEventListener("wheel", (e) => {
+    if (!e.ctrlKey && !e.metaKey) return; // plain wheel scrolls the page
     e.preventDefault();
     cam.radius = Math.max(LIMITS.radius[0], Math.min(LIMITS.radius[1], cam.radius + e.deltaY * 0.002));
   }, { passive: false });
 
   // Keyboard shortcuts
   document.addEventListener("keydown", (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+    const t = e.target;
+    const tag = t && t.tagName ? t.tagName : "";
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || tag === "BUTTON" || tag === "A" || (t && t.isContentEditable)) return;
     switch (e.code) {
       case "Space": e.preventDefault(); setPaused(!paused); break;
       case "KeyS": setSlow(!slow); break;
@@ -243,15 +261,15 @@ function run(THREE, sceneMod, charMod, audioMod) {
       const prog = strokeProgress(shot, time);
       const C = new THREE.Vector3(shot.contact.x, shot.contact.y, shot.contact.z);
       const sign = side === "red" ? -1 : 1; // red hits toward -X, blue toward +X
+      // Aim the wrist so the paddle blade (0.13 m beyond the wrist) meets the ball.
+      const grip = C.clone().add(new THREE.Vector3(-sign * 0.13, 0.05, 0));
       if (prog && prog.stage === "windup") {
         const u = 1 - prog.u; // 1 at start (back), 0 at contact
-        const windup = C.clone().add(new THREE.Vector3(-sign * 0.42 * u, 0.16 * u, 0));
-        pose.paddleTarget = windup;
+        pose.paddleTarget = grip.clone().add(new THREE.Vector3(-sign * 0.42 * u, 0.16 * u, 0));
       } else if (prog && prog.stage === "follow") {
-        const follow = C.clone().add(new THREE.Vector3(sign * 0.28 * prog.u, 0.04 * prog.u, 0));
-        pose.paddleTarget = follow;
+        pose.paddleTarget = grip.clone().add(new THREE.Vector3(sign * 0.28 * prog.u, 0.04 * prog.u, 0));
       } else {
-        pose.paddleTarget = C;
+        pose.paddleTarget = grip;
       }
       pose.torsoY = (shot.contact.z / 1.4) * 0.35;
       pose.torsoX = 0.12;

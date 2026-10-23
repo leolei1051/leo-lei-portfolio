@@ -14,8 +14,8 @@ export const TABLE = {
   netTop: 0.9125,
 };
 export const BALL_R = 0.02;
-export const RED_X = 1.85;   // red player root X (+X, serves)
-export const BLUE_X = -1.85; // blue player root X (-X)
+export const RED_X = 1.6;    // red player root X (+X, serves)
+export const BLUE_X = -1.6;  // blue player root X (-X)
 export const GRAVITY = [0, -9.8, 0];
 
 export const RALLY_DURATION = 10.0;
@@ -28,7 +28,7 @@ export const SHOTS = [
   { t: 4.55, actor: "blue", stroke: "backhand", contact: { x: -0.88, y: 0.85, z: -0.18 } },
   { t: 5.60, actor: "red",  stroke: "backhand", contact: { x: 0.88, y: 0.85, z: 0.15 } },
   { t: 6.65, actor: "blue", stroke: "attack",   contact: { x: -0.80, y: 1.00, z: 0.00 } },
-  { t: 7.45, actor: "red",  stroke: "block",    contact: { x: 0.70, y: 0.85, z: 0.00 } },
+  { t: 7.45, actor: "red",  stroke: "block",    contact: { x: 0.85, y: 0.85, z: 0.00 } },
   { t: 8.45, actor: "blue", stroke: "push",     contact: { x: -0.85, y: 0.82, z: 0.00 } },
 ];
 
@@ -49,11 +49,11 @@ const BALL_WAYPOINTS = [
   { t: 6.30, x: -0.50, y: 0.78, z: -0.05 }, // bounce (blue side)
   { t: 6.65, x: -0.80, y: 1.00, z: 0.00 }, // blue attack contact
   { t: 7.15, x: 0.45, y: 0.78, z: 0.00 }, // bounce (red side)
-  { t: 7.45, x: 0.70, y: 0.85, z: 0.00 }, // red block contact
+  { t: 7.45, x: 0.85, y: 0.85, z: 0.00 }, // red block contact
   { t: 8.10, x: -0.55, y: 0.78, z: 0.00 }, // bounce (blue side)
   { t: 8.45, x: -0.85, y: 0.82, z: 0.00 }, // blue push contact
   { t: 9.10, x: 0.70, y: 0.95, z: 0.05 }, // red catch
-  { t: 10.00, x: 0.70, y: 1.20, z: 0.10 }, // ready (== t 0)
+  { t: 10.00, x: 0.70, y: 1.20, z: 0.10, hold: true }, // ready (held; == t 0)
 ];
 
 function wrap(t) {
@@ -76,6 +76,11 @@ export function ballStateAt(t) {
   for (let i = 0; i < wp.length - 1; i++) {
     const a = wp[i], b = wp[i + 1];
     if (phase >= a.t && phase <= b.t) {
+      const s = (phase - a.t) / (b.t - a.t);
+      if (b.hold) {
+        // Held in the hand: linear interpolation, no gravity.
+        return { x: a.x + (b.x - a.x) * s, y: a.y + (b.y - a.y) * s, z: a.z + (b.z - a.z) * s };
+      }
       const arc = solveArc(a, a.t, b, b.t);
       const dt = phase - a.t;
       return {

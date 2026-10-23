@@ -226,6 +226,9 @@
 .court-fallback[hidden] { display: none; }
 .court-fallback-inner { max-width: 460px; }
 
+/* When WebGL is unavailable the HUD has no listeners — hide it. */
+.no-webgl .court-hud { display: none; }
+
 /* ---------- Reduced motion / mobile ---------- */
 @media (prefers-reduced-motion: reduce) {
   .court-hotspot, .court-btn { transition: none; }
