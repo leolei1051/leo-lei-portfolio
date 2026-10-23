@@ -10,6 +10,8 @@ bad() { echo "  [FAIL] $1"; fail=1; }
 
 echo "== files =="
 for f in index.html forecast.html assets/site.css assets/site.js \
+         assets/court.css assets/court/main.js assets/court/scene.js \
+         assets/court/characters.js assets/court/rally.js assets/court/audio.js \
          vercel.json README.md .gitignore assets/Leo_Lei_Resume.pdf; do
   [ -f "$f" ] && ok "$f" || bad "missing $f"
 done
@@ -25,13 +27,14 @@ echo "== external links are allowlisted =="
 # Every external https URL in deployable files must match the allowlist below.
 # Fails closed: a private repo or a signed/tokenised URL breaks the check until
 # it is explicitly approved here. No private identifier is named in this file.
-urls=$(grep -ohE 'https://[^" >]+' index.html forecast.html assets/site.js assets/site.css 2>/dev/null | sort -u)
+urls=$(grep -ohE 'https://[^" >]+' index.html forecast.html assets/site.js assets/site.css assets/court.css assets/court/*.js 2>/dev/null | sort -u)
 badlink=0
 for u in $urls; do
   case "$u" in
     https://github.com/leolei1051|https://github.com/leolei1051/*|\
     https://www.linkedin.com/in/leo-lei-37705a349/*|\
-    https://leo-lei-portfolio.vercel.app/*|https://cdn.tailwindcss.com)
+    https://leo-lei-portfolio.vercel.app/*|https://cdn.tailwindcss.com|\
+    https://cdn.jsdelivr.net/npm/three@0.170.0/*)
       ok "$u" ;;
     *)
       bad "unexpected external link: $u"; badlink=1 ;;

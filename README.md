@@ -9,7 +9,7 @@ one click.
 
 ## Features
 
-- **"Leo's Workspace" lobby** — a scene-based hero (perspective grid floor + green glow) with four entry cards into About / Projects / Learning / Contact.
+- **"Leo's Court" 3D hero** — a real-time WebGL (Three.js) table-tennis rally between two stylised players, with a static fallback when WebGL2 is unavailable (see below).
 - **Direct access** — View Projects, Download CV, GitHub and LinkedIn are reachable without any animation gate.
 - **Responsive** — mobile-first layout with a collapsible nav that closes on navigation; no horizontal overflow.
 - **Dark terminal aesthetic** — near-black `#050505` base, monospace micro-labels, stacked display headline, film-grain overlay and a marquee skills ticker.
@@ -19,6 +19,26 @@ one click.
 - **CV download** — a "Download CV" button that serves `assets/Leo_Lei_Resume.pdf`.
 - **Reduced motion & no-JS fallback** — `prefers-reduced-motion` disables animation, and all content renders without JavaScript.
 - **Accessible & SEO-friendly** — semantic HTML, skip link, ARIA states, Open Graph tags, inline favicon.
+
+## Leo's Court — 3D interactive hero
+
+The homepage hero is a real-time WebGL (Three.js via CDN ESM, no build step)
+table-tennis rally between two stylised players. Notes for maintainers:
+
+- **Prototype characters** — the players are procedural placeholder models
+  (layered-joint humanoids built from primitives), **not** final hand-drawn or
+  modelled art. No reference art or 3D models were provided, so everything is
+  generated in code — meaning there are **no external assets and no licensing
+  obligations**. The on-screen badge states this explicitly.
+- **Demo rally** — the rally is a scripted ~10 s loop (serve → rally → one
+  attack), not physics or AI. Any score is demonstrative only.
+- **Controls** — drag/touch to orbit (limited), Pause / Slow / Reset / Sound
+  buttons, keyboard `Space` `S` `R` `M` `Esc`. Sound is synthesised (WebAudio)
+  and **off by default**.
+- **Fallback** — without WebGL2 (or if Three.js fails to load) the hero
+  degrades to a static block; all content and navigation remain reachable.
+- **Local preview** — ES modules need HTTP, so use `python -m http.server`
+  (opening `index.html` via `file://` shows the static fallback, not the 3D).
 
 ## Project structure
 

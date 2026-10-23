@@ -1,0 +1,241 @@
+/* ============================================================
+   Leo's Court — 3D table-tennis hero (HUD, controls, hotspots,
+   modal, fallback). Scene styles live here so the shared
+   design system (site.css) stays untouched.
+   ============================================================ */
+
+.court-hero {
+  position: relative;
+  height: 92vh;
+  min-height: 560px;
+  max-height: 1080px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+  background: #060807;
+}
+
+#court-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: pan-y;   /* vertical scroll passes through; horizontal drags orbit */
+}
+
+/* ---------- HUD ---------- */
+.court-hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+.court-hud > * { pointer-events: auto; }
+
+.court-title {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  padding: 10px 14px;
+  border: 1px solid rgba(74, 222, 128, 0.35);
+  border-radius: 10px;
+  background: rgba(5, 5, 5, 0.55);
+  backdrop-filter: blur(6px);
+  color: var(--paper);
+  font-family: var(--font-mono);
+}
+.court-title .court-name { font-size: 15px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; }
+.court-title .court-sub { display: block; margin-top: 2px; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--mute); }
+
+.court-enter {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+.court-enter:hover { background: var(--paper); }
+
+.court-badge {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  max-width: 260px;
+  padding: 8px 11px;
+  border: 1px solid rgba(255, 200, 60, 0.45);
+  border-radius: 8px;
+  background: rgba(20, 15, 0, 0.6);
+  color: #ffd27a;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+}
+
+/* ---------- Hotspots (courtside signs) ---------- */
+.court-hotspots {
+  position: absolute;
+  left: 18px;
+  bottom: 92px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: min(340px, calc(100vw - 36px));
+}
+.court-hotspot {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(5, 5, 5, 0.6);
+  backdrop-filter: blur(4px);
+  color: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+.court-hotspot:hover, .court-hotspot:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+.court-hotspot .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+
+/* ---------- Controls ---------- */
+.court-controls {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(5, 5, 5, 0.6);
+  backdrop-filter: blur(6px);
+  white-space: nowrap;
+}
+.court-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  min-width: 40px;
+  padding: 0 13px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.16s ease, color 0.16s ease, background 0.16s ease;
+}
+.court-btn:hover { border-color: var(--accent); color: var(--accent); }
+.court-btn[aria-pressed="true"] { background: var(--accent); color: var(--ink); border-color: var(--accent); }
+.court-btn .icon { font-size: 15px; line-height: 1; }
+
+/* ---------- Reading modal ---------- */
+.court-modal {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(5, 5, 5, 0.55);
+  backdrop-filter: blur(3px);
+  z-index: 20;
+}
+.court-modal[hidden] { display: none; }
+.court-modal-card {
+  width: min(440px, 100%);
+  max-height: 82%;
+  overflow: auto;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #0b0d0c;
+  box-shadow: var(--shadow-card);
+}
+.court-modal-card h3 {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 12px;
+}
+.court-modal-card p, .court-modal-card li { color: var(--mute); font-size: 14px; line-height: 1.6; }
+.court-modal-card ul { list-style: none; padding: 0; margin: 0 0 14px; }
+.court-modal-card li { padding: 7px 0; border-top: 1px solid var(--line); }
+.court-modal-card a { color: var(--accent); text-decoration: none; }
+.court-modal-card a:hover { color: var(--paper); }
+.court-modal-close {
+  margin-top: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  background: transparent;
+  cursor: pointer;
+}
+.court-modal-close:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ---------- Fallback (no WebGL) ---------- */
+.court-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  background:
+    radial-gradient(600px 300px at 50% 38%, rgba(74, 222, 128, 0.10), transparent 70%),
+    #060807;
+}
+.court-fallback[hidden] { display: none; }
+.court-fallback-inner { max-width: 460px; }
+
+/* ---------- Reduced motion / mobile ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .court-hotspot, .court-btn { transition: none; }
+}
+@media (max-width: 640px) {
+  .court-hero { height: 88vh; min-height: 480px; }
+  .court-title { top: 10px; left: 10px; padding: 8px 10px; }
+  .court-badge { top: 10px; right: 10px; max-width: 170px; font-size: 9px; }
+  .court-enter { top: 10px; padding: 8px 14px; font-size: 11px; }
+  .court-hotspots { left: 10px; bottom: 78px; max-width: calc(100vw - 20px); }
+  .court-controls { bottom: 10px; gap: 5px; padding: 6px; }
+  .court-btn { min-height: 38px; min-width: 38px; padding: 0 10px; font-size: 10px; }
+}
