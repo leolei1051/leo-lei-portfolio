@@ -117,6 +117,13 @@ async function run(THREE, sceneMod, spritesMod, audioMod) {
   let score = { fan: 8, ma: 8 };
   const clock = new THREE.Clock();
 
+  // Debug hook: ?phase=N freezes the timeline at phase N (for screenshots/tests).
+  const qp = new URLSearchParams(location.search).get("phase");
+  if (qp !== null && !isNaN(parseFloat(qp))) {
+    phase = ((parseFloat(qp) % RALLY_DURATION) + RALLY_DURATION) % RALLY_DURATION;
+    paused = true;
+  }
+
   // ---- HUD wiring ----
   const btnPlay = $("#btn-play");
   const btnSlow = $("#btn-slow");
