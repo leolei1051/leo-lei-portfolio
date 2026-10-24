@@ -26,6 +26,12 @@ export const GRAVITY = [0, -9.8, 0];
 
 export const RALLY_DURATION = 10.0;
 
+// Demo point: the rally ends with the blue player's push flying past the red
+// player (who cannot reach it). Score increments once when the phase crosses
+// this time; the loop then resets the ball to the ready position.
+export const POINT_END_TIME = 9.60;
+export const WINNER = "blue";
+
 // Each stroke: when + who + where the paddle meets the ball.
 export const SHOTS = [
   { t: 1.20, actor: "red",  stroke: "serve",    contact: { x: 0.05, y: 1.02, z: 0.95 } },
@@ -58,8 +64,8 @@ const BALL_WAYPOINTS = [
   { t: 7.45, x: 0.00, y: 0.85, z: 0.85 }, // red block contact
   { t: 8.10, x: 0.00, y: 0.78, z: -0.55 }, // bounce (blue side)
   { t: 8.45, x: 0.00, y: 0.82, z: -0.85 }, // blue push contact
-  { t: 9.10, x: -0.42, y: 0.95, z: 0.70 }, // red catch
-  { t: 10.00, x: -0.42, y: 1.20, z: 0.70, hold: true }, // ready (held; == t 0)
+  { t: 9.60, x: 0.00, y: 0.35, z: 1.80 }, // ball out — red misses, point over (blue wins)
+  { t: 10.00, x: -0.42, y: 1.20, z: 0.70, hold: true }, // reset: ball back in red's hand
 ];
 
 function wrap(t) {

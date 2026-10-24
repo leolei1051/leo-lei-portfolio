@@ -138,7 +138,7 @@
         <a class="court-enter" href="#projects">Enter site <span aria-hidden="true">&darr;</span></a>
 
         <div class="court-badge" role="note">
-          Prototype: procedural placeholder characters (not final art). Demo rally.
+          2.5D 立绘演示 · 演示比分（非真实数据）
         </div>
 
         <div class="court-hotspots" aria-label="Site sections">
@@ -148,11 +148,22 @@
           <button class="court-hotspot" type="button" data-panel="contact"><span class="dot" aria-hidden="true"></span>Contact</button>
         </div>
 
-        <div class="court-controls" role="group" aria-label="Court controls">
-          <button id="btn-play" class="court-btn" type="button" aria-pressed="false"><span class="label">Pause</span></button>
-          <button id="btn-slow" class="court-btn" type="button" aria-pressed="false">Slow</button>
-          <button id="btn-reset" class="court-btn" type="button">Reset</button>
-          <button id="btn-sound" class="court-btn" type="button" aria-pressed="false">Sound</button>
+        <div class="court-scoreboard" role="group" aria-label="Scoreboard">
+          <p class="sb-title">Leo's Court &middot; 演示赛</p>
+          <div class="sb-row">
+            <span class="sb-player"><span class="sb-dot sb-dot-blue" aria-hidden="true"></span>樊振东 <span class="sb-en">Fan</span></span>
+            <span class="sb-score" id="score-fan">8</span>
+            <span class="sb-colon">:</span>
+            <span class="sb-score" id="score-ma">8</span>
+            <span class="sb-player sb-right"><span class="sb-dot sb-dot-red" aria-hidden="true"></span>马龙 <span class="sb-en">Ma</span></span>
+          </div>
+          <p class="sb-server">发球 · <span id="server-marker">樊振东</span> · 演示比分</p>
+          <div class="sb-controls">
+            <button id="btn-play" class="court-btn" type="button" aria-pressed="false"><span class="label">Pause</span></button>
+            <button id="btn-slow" class="court-btn" type="button" aria-pressed="false">Slow</button>
+            <button id="btn-reset" class="court-btn" type="button">Replay</button>
+            <button id="btn-sound" class="court-btn" type="button" aria-pressed="false">Sound</button>
+          </div>
         </div>
 
         <!-- Reading modal -->

@@ -1,13 +1,12 @@
-// Leo's Court — entry point. Detects WebGL2, dynamically imports the scene
-// modules (so a CDN failure degrades to a static fallback, never a blank page),
-// then shows a static 2.5D ready-pose scene (3D court + two anime sprites)
-// with orbit controls + HUD wiring.
+// Leo's Court — entry point. WebGL2 detection + dynamic imports (so a CDN
+// failure degrades to a static fallback), then a 2.5D table-tennis demo:
+// two anime sprites doing restrained lateral movement synced to a choreographed
+// rally, an on-screen scoreboard, and orbit/HUD controls.
 //
-// This is a preview: the procedural humanoid + rally code in characters.js and
-// rally.js is kept for a future 3D-model / skeletal swap, but is not animated
-// here because the current assets are two transparent full-body illustrations.
+// Note: the sprites are single fixed-pose illustrations, so the "movement" is a
+// whole-sprite stance shift, NOT a natural swing. Skeletal/models are pending.
 
-import { RED_Z, BLUE_Z, RED_X, BLUE_X } from "./rally.js";
+import { RED_Z, BLUE_Z, RED_X, BLUE_X, ballStateAt, activeShot, strokeProgress, CONTACT_EVENTS, RALLY_DURATION, POINT_END_TIME, WINNER } from "./rally.js";
 
 const THREE_URL = "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js";
 
@@ -65,9 +64,6 @@ async function run(THREE, sceneMod, spritesMod, audioMod) {
   resize();
   window.addEventListener("resize", resize);
 
-  // Static ready-pose preview: no rally, hide the ball.
-  ball.visible = false;
-
   // Players (2.5D anime sprites). Fan = blue near-left, Ma = red/gold far-right.
   const [fan, ma] = await Promise.all([
     buildSprite("assets/court/小胖.png", { height: 1.45 }),
@@ -114,20 +110,28 @@ async function run(THREE, sceneMod, spritesMod, audioMod) {
   }
   applyCamera();
 
+  // ---- Rally / score state ----
+  let paused = false;
+  let slow = false;
+  let phase = 0;
+  let score = { fan: 8, ma: 8 };
+  let pointScored = false;
+  const clock = new THREE.Clock();
+
   // ---- HUD wiring ----
   const btnPlay = $("#btn-play");
   const btnSlow = $("#btn-slow");
-  const btnReset = $("#btn-reset");
+  const btnReplay = $("#btn-reset");
   const btnSound = $("#btn-sound");
   const modal = $("#court-modal");
 
-  // Play / Slow are inert in the static preview (no rally), kept for the
-  // future animated version; Reset and Sound remain functional.
   function setPaused(p) {
+    paused = p;
     if (btnPlay) btnPlay.setAttribute("aria-pressed", String(p));
     if (btnPlay) btnPlay.querySelector(".label").textContent = p ? "Play" : "Pause";
   }
   function setSlow(s) {
+    slow = s;
     if (btnSlow) btnSlow.setAttribute("aria-pressed", String(s));
   }
   function setSound(on) {
@@ -135,10 +139,27 @@ async function run(THREE, sceneMod, spritesMod, audioMod) {
     if (btnSound) btnSound.setAttribute("aria-pressed", String(on));
   }
 
-  if (btnPlay) btnPlay.addEventListener("click", () => setPaused(btnPlay.getAttribute("aria-pressed") !== "true"));
-  if (btnSlow) btnSlow.addEventListener("click", () => setSlow(btnSlow.getAttribute("aria-pressed") !== "true"));
+  function updateScoreboard() {
+    const f = $("#score-fan"), m = $("#score-ma");
+    if (f) f.textContent = String(score.fan);
+    if (m) m.textContent = String(score.ma);
+    const srv = $("#server-marker");
+    if (srv) srv.textContent = "樊振东"; // fixed server in this demo choreography
+  }
+
+  function replay() {
+    phase = 0;
+    score = { fan: 8, ma: 8 };
+    pointScored = false;
+    setPaused(false);
+    updateScoreboard();
+  }
+
+  if (btnPlay) btnPlay.addEventListener("click", () => setPaused(!paused));
+  if (btnSlow) btnSlow.addEventListener("click", () => setSlow(!slow));
+  if (btnReplay) btnReplay.addEventListener("click", replay);
   if (btnSound) btnSound.addEventListener("click", () => setSound(!audio.enabled));
-  if (btnReset) btnReset.addEventListener("click", resetCam);
+  updateScoreboard();
 
   // Hotspots -> modal
   const PANELS = {
@@ -167,7 +188,7 @@ async function run(THREE, sceneMod, spritesMod, audioMod) {
   function openPanel(key) {
     const p = PANELS[key];
     if (!p) return;
-    resumeAfterPaused = btnPlay ? btnPlay.getAttribute("aria-pressed") === "true" : false;
+    resumeAfterPaused = paused;
     setPaused(true);
     lastFocused = document.activeElement;
     $("#court-modal-title").textContent = p.title;
@@ -197,9 +218,7 @@ async function run(THREE, sceneMod, spritesMod, audioMod) {
   modal.addEventListener("click", (e) => { if (e.target === modal) closePanel(); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && modal && !modal.hidden) closePanel(); });
 
-  document.addEventListener("visibilitychange", () => { /* keep for parity; no rally to pause */ });
-
-  // ---- Pointer orbit (mouse drag + touch) ----
+  // ---- Pointer orbit ----
   let dragging = false;
   let pointers = new Map();
   let pinchDist = 0;
@@ -220,9 +239,7 @@ async function run(THREE, sceneMod, spritesMod, audioMod) {
     if (pointers.size === 2) {
       const [a, b] = [...pointers.values()];
       const d = Math.hypot(a.x - b.x, a.y - b.y);
-      if (pinchDist > 0) {
-        cam.radius = Math.max(LIMITS.radius[0], Math.min(LIMITS.radius[1], cam.radius * (pinchDist / d)));
-      }
+      if (pinchDist > 0) cam.radius = Math.max(LIMITS.radius[0], Math.min(LIMITS.radius[1], cam.radius * (pinchDist / d)));
       pinchDist = d;
       return;
     }
@@ -240,31 +257,37 @@ async function run(THREE, sceneMod, spritesMod, audioMod) {
   canvas.addEventListener("pointerup", endPointer);
   canvas.addEventListener("pointercancel", endPointer);
   canvas.addEventListener("wheel", (e) => {
-    if (!e.ctrlKey && !e.metaKey) return; // plain wheel scrolls the page
+    if (!e.ctrlKey && !e.metaKey) return;
     e.preventDefault();
     cam.radius = Math.max(LIMITS.radius[0], Math.min(LIMITS.radius[1], cam.radius + e.deltaY * 0.002));
   }, { passive: false });
 
-  // Keyboard shortcuts
   document.addEventListener("keydown", (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
     const t = e.target;
     const tag = t && t.tagName ? t.tagName : "";
     if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || tag === "BUTTON" || tag === "A" || (t && t.isContentEditable)) return;
     switch (e.code) {
-      case "KeyR": resetCam(); break;
+      case "Space": e.preventDefault(); setPaused(!paused); break;
+      case "KeyS": setSlow(!slow); break;
+      case "KeyR": replay(); break;
       case "KeyM": setSound(!audio.enabled); break;
     }
   });
 
-  // ---- Main loop (camera + render only; static scene) ----
-  const clock = new THREE.Clock();
-  function tick() {
-    clock.getDelta();
+  // ---- Restrained sprite stance movement (whole-sprite shift, NOT a swing) ----
+  function spriteShift(baseX, side, p) {
+    const shot = activeShot(side, p);
+    if (!shot) return baseX;
+    return baseX + (shot.contact.x - baseX) * 0.65;
+  }
 
-    // intro camera
+  // ---- Main loop ----
+  function tick() {
+    const dt = Math.min(clock.getDelta(), 0.05);
+
     if (introT < introDur) {
-      introT += 1 / 60;
+      introT += dt;
       const t = Math.min(1, introT / introDur);
       const e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
       cam.theta = INTRO_START.theta + (REST.theta - INTRO_START.theta) * e;
@@ -272,6 +295,34 @@ async function run(THREE, sceneMod, spritesMod, audioMod) {
       cam.radius = INTRO_START.radius + (REST.radius - INTRO_START.radius) * e;
     }
     applyCamera();
+
+    // advance timeline (play/pause/slow control the same clock)
+    const prevPhase = phase;
+    if (!paused) {
+      phase = (phase + dt * (slow ? 0.3 : 1)) % RALLY_DURATION;
+    }
+
+    // ball follows the choreographed path
+    const b = ballStateAt(phase);
+    ball.position.set(b.x, b.y, b.z);
+
+    // audio on contact (wrap-aware)
+    for (const c of CONTACT_EVENTS) {
+      const crossed = phase >= prevPhase ? (c.t > prevPhase && c.t <= phase) : (c.t > prevPhase || c.t <= phase);
+      if (crossed) audio.playHit();
+    }
+
+    // point score: increment once per point
+    if (!pointScored && phase >= POINT_END_TIME) {
+      pointScored = true;
+      if (WINNER === "blue") score.ma++; else score.fan++;
+      updateScoreboard();
+    }
+    if (phase < prevPhase) pointScored = false; // wrapped into the next point
+
+    // characters: restrained lateral movement synced to their shots
+    fan.position.x += (spriteShift(RED_X, "red", phase) - fan.position.x) * Math.min(1, dt * 10);
+    ma.position.x += (spriteShift(BLUE_X, "blue", phase) - ma.position.x) * Math.min(1, dt * 10);
 
     renderer.render(scene, camera);
     requestAnimationFrame(tick);

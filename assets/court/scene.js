@@ -78,8 +78,9 @@ function makeTable() {
     column.receiveShadow = true;
     g.add(column);
 
-    const foot = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.07, 0.65), footMat);
-    foot.position.set(0, 0.035, z);
+    // Feet extend past the tabletop width so the base structure is visible from above.
+    const foot = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.08, 0.85), footMat);
+    foot.position.set(0, 0.04, z);
     foot.castShadow = true;
     foot.receiveShadow = true;
     g.add(foot);

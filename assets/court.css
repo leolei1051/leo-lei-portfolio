@@ -119,21 +119,32 @@
 }
 .court-hotspot .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
 
-/* ---------- Controls ---------- */
-.court-controls {
+/* ---------- Scoreboard ---------- */
+.court-scoreboard {
   position: absolute;
-  bottom: 18px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 8px;
-  padding: 8px;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  min-width: 212px;
+  padding: 14px 16px;
   border: 1px solid var(--line);
-  border-radius: 999px;
-  background: rgba(5, 5, 5, 0.6);
+  border-radius: 12px;
+  background: rgba(5, 5, 5, 0.66);
   backdrop-filter: blur(6px);
-  white-space: nowrap;
+  font-family: var(--font-mono);
+  text-align: center;
 }
+.sb-title { margin: 0 0 10px; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mute); }
+.sb-row { display: flex; align-items: baseline; justify-content: center; gap: 8px; }
+.sb-player { display: inline-flex; flex-direction: column; align-items: center; gap: 3px; font-size: 12px; color: var(--paper); }
+.sb-en { font-size: 9px; color: var(--faint); letter-spacing: 0.08em; text-transform: uppercase; }
+.sb-score { font-size: 34px; font-weight: 800; line-height: 1; color: var(--paper); }
+.sb-colon { font-size: 24px; color: var(--faint); }
+.sb-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
+.sb-dot-blue { background: #3b6bff; }
+.sb-dot-red { background: #ff3b3b; }
+.sb-server { margin: 10px 0 0; font-size: 10px; letter-spacing: 0.06em; color: var(--faint); }
+.sb-controls { display: flex; gap: 5px; justify-content: center; margin-top: 10px; }
 .court-btn {
   display: inline-flex;
   align-items: center;
@@ -239,7 +250,10 @@
   .court-title .court-sub { display: none; }
   .court-enter { top: 10px; left: auto; right: 10px; transform: none; padding: 8px 12px; font-size: 10px; }
   .court-badge { top: 56px; left: 10px; right: 10px; max-width: none; font-size: 9px; text-align: center; }
-  .court-hotspots { left: 10px; right: 10px; bottom: 72px; max-width: none; }
-  .court-controls { bottom: 12px; gap: 5px; padding: 6px; }
+  .court-hotspots { left: 10px; right: 10px; bottom: 200px; max-width: none; }
+  .court-scoreboard { right: 10px; left: 10px; top: auto; bottom: 10px; transform: none; min-width: 0; padding: 10px 12px; }
+  .sb-score { font-size: 26px; }
+  .sb-colon { font-size: 18px; }
+  .sb-controls { margin-top: 8px; }
   .court-btn { min-height: 38px; min-width: 38px; padding: 0 10px; font-size: 10px; }
 }
