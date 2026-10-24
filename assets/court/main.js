@@ -1,8 +1,13 @@
 // Leo's Court — entry point. Detects WebGL2, dynamically imports the scene
 // modules (so a CDN failure degrades to a static fallback, never a blank page),
-// then runs the choreographed rally + orbit controls + HUD wiring.
+// then shows a static 2.5D ready-pose scene (3D court + two anime sprites)
+// with orbit controls + HUD wiring.
+//
+// This is a preview: the procedural humanoid + rally code in characters.js and
+// rally.js is kept for a future 3D-model / skeletal swap, but is not animated
+// here because the current assets are two transparent full-body illustrations.
 
-import { RALLY_DURATION, RED_Z, BLUE_Z, RED_X, BLUE_X, ballStateAt, activeShot, strokeProgress, CONTACT_EVENTS } from "./rally.js";
+import { RED_Z, BLUE_Z, RED_X, BLUE_X } from "./rally.js";
 
 const THREE_URL = "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js";
 
@@ -30,29 +35,29 @@ async function boot() {
     showFallback("WebGL2 unavailable");
     return;
   }
-  let THREE, sceneMod, charMod, audioMod;
+  let THREE, sceneMod, spritesMod, audioMod;
   try {
     THREE = await import(THREE_URL);
     sceneMod = await import("./scene.js");
-    charMod = await import("./characters.js");
+    spritesMod = await import("./sprites.js");
     audioMod = await import("./audio.js");
   } catch (e) {
     showFallback("3D module load failed: " + (e && e.message ? e.message : e));
     return;
   }
   try {
-    run(THREE, sceneMod, charMod, audioMod);
+    await run(THREE, sceneMod, spritesMod, audioMod);
   } catch (e) {
     showFallback("3D setup failed: " + (e && e.message ? e.message : e));
   }
 }
 
-function run(THREE, sceneMod, charMod, audioMod) {
+async function run(THREE, sceneMod, spritesMod, audioMod) {
   const canvas = $("#court-canvas");
   if (!canvas) { showFallback("no canvas"); return; }
 
   const { initScene } = sceneMod;
-  const { buildCharacter, updateCharacter } = charMod;
+  const { buildSprite } = spritesMod;
   const { createCourtAudio } = audioMod;
   const audio = createCourtAudio();
 
@@ -60,14 +65,17 @@ function run(THREE, sceneMod, charMod, audioMod) {
   resize();
   window.addEventListener("resize", resize);
 
-  // Players: Fan (red) near +Z faces -Z; Ma (blue) far -Z faces +Z.
-  const red = buildCharacter({ jersey: 0xff3b3b, hair: 0x8a1010, skin: 0xf0c8a0 });
-  red.root.position.set(RED_X, 0, RED_Z);
-  red.root.rotation.y = Math.PI / 2;
-  const blue = buildCharacter({ jersey: 0x3b6bff, hair: 0x0e2a7a, skin: 0xf0c8a0 });
-  blue.root.position.set(BLUE_X, 0, BLUE_Z);
-  blue.root.rotation.y = -Math.PI / 2;
-  world.add(red.root, blue.root);
+  // Static ready-pose preview: no rally, hide the ball.
+  ball.visible = false;
+
+  // Players (2.5D anime sprites). Fan = blue near-left, Ma = red/gold far-right.
+  const [fan, ma] = await Promise.all([
+    buildSprite("assets/court/小胖.png", { height: 1.45 }),
+    buildSprite("assets/court/马龙.png", { height: 1.45 }),
+  ]);
+  fan.position.set(RED_X, 0, RED_Z);
+  ma.position.set(BLUE_X, 0, BLUE_Z);
+  world.add(fan, ma);
 
   // ---- Camera / orbit state ----
   const camTarget = new THREE.Vector3(0, 0.75, 0);
@@ -106,12 +114,6 @@ function run(THREE, sceneMod, charMod, audioMod) {
   }
   applyCamera();
 
-  // ---- State ----
-  let paused = reducedMotion; // reduced motion starts paused (user opts in)
-  let slow = false;
-  let phase = 0;
-  const clock = new THREE.Clock();
-
   // ---- HUD wiring ----
   const btnPlay = $("#btn-play");
   const btnSlow = $("#btn-slow");
@@ -119,13 +121,13 @@ function run(THREE, sceneMod, charMod, audioMod) {
   const btnSound = $("#btn-sound");
   const modal = $("#court-modal");
 
+  // Play / Slow are inert in the static preview (no rally), kept for the
+  // future animated version; Reset and Sound remain functional.
   function setPaused(p) {
-    paused = p;
     if (btnPlay) btnPlay.setAttribute("aria-pressed", String(p));
     if (btnPlay) btnPlay.querySelector(".label").textContent = p ? "Play" : "Pause";
   }
   function setSlow(s) {
-    slow = s;
     if (btnSlow) btnSlow.setAttribute("aria-pressed", String(s));
   }
   function setSound(on) {
@@ -133,8 +135,8 @@ function run(THREE, sceneMod, charMod, audioMod) {
     if (btnSound) btnSound.setAttribute("aria-pressed", String(on));
   }
 
-  if (btnPlay) btnPlay.addEventListener("click", () => setPaused(!paused));
-  if (btnSlow) btnSlow.addEventListener("click", () => setSlow(!slow));
+  if (btnPlay) btnPlay.addEventListener("click", () => setPaused(btnPlay.getAttribute("aria-pressed") !== "true"));
+  if (btnSlow) btnSlow.addEventListener("click", () => setSlow(btnSlow.getAttribute("aria-pressed") !== "true"));
   if (btnSound) btnSound.addEventListener("click", () => setSound(!audio.enabled));
   if (btnReset) btnReset.addEventListener("click", resetCam);
 
@@ -160,12 +162,12 @@ function run(THREE, sceneMod, charMod, audioMod) {
     ] },
   };
 
-  let resumeAfterModal = paused;
+  let resumeAfterPaused = false;
   let lastFocused = null;
   function openPanel(key) {
     const p = PANELS[key];
     if (!p) return;
-    resumeAfterModal = paused;
+    resumeAfterPaused = btnPlay ? btnPlay.getAttribute("aria-pressed") === "true" : false;
     setPaused(true);
     lastFocused = document.activeElement;
     $("#court-modal-title").textContent = p.title;
@@ -187,7 +189,7 @@ function run(THREE, sceneMod, charMod, audioMod) {
   }
   function closePanel() {
     modal.hidden = true;
-    setPaused(resumeAfterModal);
+    setPaused(resumeAfterPaused);
     if (lastFocused && lastFocused.focus) lastFocused.focus();
   }
   $all(".court-hotspot").forEach((b) => b.addEventListener("click", () => openPanel(b.dataset.panel)));
@@ -195,15 +197,7 @@ function run(THREE, sceneMod, charMod, audioMod) {
   modal.addEventListener("click", (e) => { if (e.target === modal) closePanel(); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && modal && !modal.hidden) closePanel(); });
 
-  // Pause when hero leaves the viewport or tab hidden.
-  if ("IntersectionObserver" in window) {
-    new IntersectionObserver((entries) => {
-      entries.forEach((en) => {
-        if (!en.isIntersecting && !modal.hidden) { /* keep modal state */ }
-      });
-    }, { threshold: 0.05 }).observe(canvas);
-  }
-  document.addEventListener("visibilitychange", () => { if (document.hidden) setPaused(true); });
+  document.addEventListener("visibilitychange", () => { /* keep for parity; no rally to pause */ });
 
   // ---- Pointer orbit (mouse drag + touch) ----
   let dragging = false;
@@ -258,47 +252,19 @@ function run(THREE, sceneMod, charMod, audioMod) {
     const tag = t && t.tagName ? t.tagName : "";
     if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || tag === "BUTTON" || tag === "A" || (t && t.isContentEditable)) return;
     switch (e.code) {
-      case "Space": e.preventDefault(); setPaused(!paused); break;
-      case "KeyS": setSlow(!slow); break;
       case "KeyR": resetCam(); break;
       case "KeyM": setSound(!audio.enabled); break;
     }
   });
 
-  // ---- Pose helpers ----
-  function playerPose(player, side, time) {
-    const shot = activeShot(side, time);
-    const pose = { paddleTarget: null, supportTarget: null, torsoY: 0, torsoX: 0, crouch: 0 };
-    if (shot) {
-      const prog = strokeProgress(shot, time);
-      const C = new THREE.Vector3(shot.contact.x, shot.contact.y, shot.contact.z);
-      const sign = side === "red" ? -1 : 1; // red hits toward -Z, blue toward +Z
-      // Aim the wrist so the paddle blade (0.13 m beyond the wrist) meets the ball.
-      const grip = C.clone().add(new THREE.Vector3(0, 0.05, -sign * 0.13));
-      if (prog && prog.stage === "windup") {
-        const u = 1 - prog.u; // 1 at start (back), 0 at contact
-        pose.paddleTarget = grip.clone().add(new THREE.Vector3(0, 0.16 * u, -sign * 0.42 * u));
-      } else if (prog && prog.stage === "follow") {
-        pose.paddleTarget = grip.clone().add(new THREE.Vector3(0, 0.04 * prog.u, sign * 0.28 * prog.u));
-      } else {
-        pose.paddleTarget = grip;
-      }
-      pose.torsoY = (shot.contact.x / 0.6) * 0.35;
-      pose.torsoX = 0.12;
-      pose.crouch = -0.03;
-    } else {
-      pose.crouch = 0;
-    }
-    return pose;
-  }
-
-  // ---- Main loop ----
+  // ---- Main loop (camera + render only; static scene) ----
+  const clock = new THREE.Clock();
   function tick() {
-    const dt = Math.min(clock.getDelta(), 0.05);
+    clock.getDelta();
 
     // intro camera
     if (introT < introDur) {
-      introT += dt;
+      introT += 1 / 60;
       const t = Math.min(1, introT / introDur);
       const e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
       cam.theta = INTRO_START.theta + (REST.theta - INTRO_START.theta) * e;
@@ -306,30 +272,6 @@ function run(THREE, sceneMod, charMod, audioMod) {
       cam.radius = INTRO_START.radius + (REST.radius - INTRO_START.radius) * e;
     }
     applyCamera();
-
-    // advance rally phase
-    const phaseBefore = phase;
-    if (!paused) {
-      phase = (phase + dt * (slow ? 0.3 : 1)) % RALLY_DURATION;
-    }
-
-    // ball
-    const b = ballStateAt(phase);
-    ball.position.set(b.x, b.y, b.z);
-
-    // audio on contact (wrap-aware crossing detection)
-    for (const c of CONTACT_EVENTS) {
-      const crossed = phase >= phaseBefore
-        ? c.t > phaseBefore && c.t <= phase
-        : c.t > phaseBefore || c.t <= phase;
-      if (crossed) audio.playHit();
-    }
-
-    // characters
-    const redPose = playerPose(red, "red", phase);
-    const bluePose = playerPose(blue, "blue", phase);
-    updateCharacter(red, redPose, dt);
-    updateCharacter(blue, bluePose, dt);
 
     renderer.render(scene, camera);
     requestAnimationFrame(tick);
@@ -339,7 +281,6 @@ function run(THREE, sceneMod, charMod, audioMod) {
   if (fb) fb.hidden = true;
 
   window.__courtInit = true;
-  setPaused(paused);
   tick();
 }
 

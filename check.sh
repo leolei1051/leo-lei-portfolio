@@ -12,6 +12,7 @@ echo "== files =="
 for f in index.html forecast.html assets/site.css assets/site.js \
          assets/court.css assets/court/main.js assets/court/scene.js \
          assets/court/characters.js assets/court/rally.js assets/court/audio.js \
+         assets/court/sprites.js \
          vercel.json README.md .gitignore assets/Leo_Lei_Resume.pdf; do
   [ -f "$f" ] && ok "$f" || bad "missing $f"
 done

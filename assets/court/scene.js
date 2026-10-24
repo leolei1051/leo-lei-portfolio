@@ -96,20 +96,13 @@ function makeTable() {
 }
 
 function makeFloor() {
-  // Red sport flooring.
+  // Muted red sport flooring (desaturated, no loud grid).
   const tex = canvasTexture(1024, 1024, (ctx, w, h) => {
-    ctx.fillStyle = "#7c1a20";
+    ctx.fillStyle = "#6e4a44";
     ctx.fillRect(0, 0, w, h);
-    ctx.strokeStyle = "#8a2530";
-    ctx.lineWidth = 6;
-    for (let i = 0; i <= 8; i++) {
-      const p = (i / 8) * w;
-      ctx.beginPath(); ctx.moveTo(p, 0); ctx.lineTo(p, h); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(0, p); ctx.lineTo(w, p); ctx.stroke();
-    }
-    ctx.strokeStyle = "#a83540";
-    ctx.lineWidth = 14;
-    ctx.strokeRect(w * 0.1, h * 0.12, w * 0.8, h * 0.76);
+    ctx.strokeStyle = "rgba(255,255,255,0.10)";
+    ctx.lineWidth = 12;
+    ctx.strokeRect(w * 0.08, h * 0.10, w * 0.84, h * 0.80);
   });
   const floor = new THREE.Mesh(
     new THREE.PlaneGeometry(9, 15),
@@ -137,8 +130,9 @@ export function initScene(canvas) {
   camera.position.set(0.6, 3.5, 5.8);
   camera.lookAt(0, 0.75, 0);
 
-  // Lights
-  scene.add(new THREE.HemisphereLight(0xcdd6e6, 0x2a0d10, 0.55));
+  // Lights — kept neutral so they harmonise with the unlit anime sprites and
+  // do not tint the blue jersey, skin or red/gold-dragon art.
+  scene.add(new THREE.HemisphereLight(0xe3e7ec, 0x1c1514, 0.6));
 
   const key = new THREE.DirectionalLight(0xffffff, 2.0);
   key.position.set(3.5, 6.5, 2.5);
@@ -153,11 +147,11 @@ export function initScene(canvas) {
   key.shadow.bias = -0.0002;
   scene.add(key);
 
-  const rim = new THREE.DirectionalLight(0x9fd7ff, 0.7);
+  const rim = new THREE.DirectionalLight(0xd8dde2, 0.6);
   rim.position.set(-4, 4, -5);
   scene.add(rim);
 
-  const fill = new THREE.DirectionalLight(0xffdcc0, 0.4);
+  const fill = new THREE.DirectionalLight(0xfff1e0, 0.42);
   fill.position.set(0, 2.8, 6.5);
   scene.add(fill);
 
