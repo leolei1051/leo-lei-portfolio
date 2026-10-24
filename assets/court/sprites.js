@@ -39,8 +39,24 @@ function softShadowTexture() {
 
 // Loads a full-body transparent sprite as a fixed upright plane with a soft
 // ground shadow. `height` is the on-court height of the full image (metres).
-export async function buildSprite(textureUrl, { height = 1.45 } = {}) {
-  const img = await loadImage(textureUrl);
+export async function buildSprite(textureUrl, { height = 1.45, fallbackColor = 0x888888 } = {}) {
+  let img;
+  try {
+    img = await loadImage(textureUrl);
+  } catch (e) {
+    // Graceful degradation: a missing sprite becomes a simple coloured plane so
+    // the court still renders (never a full-page fallback for a missing texture).
+    console.warn("[court] sprite fallback for", textureUrl, e && e.message);
+    const g = new THREE.Group();
+    const plane = new THREE.Mesh(
+      new THREE.PlaneGeometry(height * 0.55, height),
+      new THREE.MeshBasicMaterial({ color: fallbackColor, transparent: true, opacity: 0.75 })
+    );
+    plane.position.y = height / 2;
+    g.add(plane);
+    return g;
+  }
+
   const tex = new THREE.Texture(img);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 4;

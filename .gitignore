@@ -30,8 +30,8 @@ yarn-error.log*
 .env
 .env.*
 
-# Reference art (real-person anime portraits & photos, source/licence unknown) — not committed
-assets/court/*.png
+# Reference photos (real-person match/table photos, source/licence unknown) — not committed.
+# Note: the character sprites (assets/court/*.png) ARE site assets and ARE committed.
 assets/court/*.jpg
 assets/court/*.jpeg
 assets/court/*.webp

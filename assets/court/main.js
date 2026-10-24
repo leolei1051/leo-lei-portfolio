@@ -6,7 +6,7 @@
 // Note: the sprites are single fixed-pose illustrations, so the "movement" is a
 // whole-sprite stance shift, NOT a natural swing. Skeletal/models are pending.
 
-import { RED_Z, BLUE_Z, RED_X, BLUE_X, ballStateAt, activeShot, strokeProgress, CONTACT_EVENTS, RALLY_DURATION, POINT_END_TIME, WINNER } from "./rally.js";
+import { RED_Z, BLUE_Z, RED_X, BLUE_X, ballStateAt, activeShot, strokeProgress, CONTACT_EVENTS, RALLY_DURATION, POINT_END_TIME } from "./rally.js";
 
 const THREE_URL = "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js";
 
@@ -66,8 +66,8 @@ async function run(THREE, sceneMod, spritesMod, audioMod) {
 
   // Players (2.5D anime sprites). Fan = blue near-left, Ma = red/gold far-right.
   const [fan, ma] = await Promise.all([
-    buildSprite("assets/court/小胖.png", { height: 1.45 }),
-    buildSprite("assets/court/马龙.png", { height: 1.45 }),
+    buildSprite("assets/court/小胖.png", { height: 1.45, fallbackColor: 0x3b6bff }),
+    buildSprite("assets/court/马龙.png", { height: 1.45, fallbackColor: 0xff3b3b }),
   ]);
   fan.position.set(RED_X, 0, RED_Z);
   ma.position.set(BLUE_X, 0, BLUE_Z);
@@ -115,7 +115,6 @@ async function run(THREE, sceneMod, spritesMod, audioMod) {
   let slow = false;
   let phase = 0;
   let score = { fan: 8, ma: 8 };
-  let pointScored = false;
   const clock = new THREE.Clock();
 
   // ---- HUD wiring ----
@@ -149,8 +148,6 @@ async function run(THREE, sceneMod, spritesMod, audioMod) {
 
   function replay() {
     phase = 0;
-    score = { fan: 8, ma: 8 };
-    pointScored = false;
     setPaused(false);
     updateScoreboard();
   }
@@ -275,11 +272,23 @@ async function run(THREE, sceneMod, spritesMod, audioMod) {
     }
   });
 
-  // ---- Restrained sprite stance movement (whole-sprite shift, NOT a swing) ----
-  function spriteShift(baseX, side, p) {
+  // Score is a pure function of the timeline: 8:8 during the rally, 8:9 after
+  // the choreographed winner, back to 8:8 when the loop restarts. No accumulation
+  // — replay/loop always land on the same demo score.
+  function demoScore(p) {
+    return p >= POINT_END_TIME ? { fan: 8, ma: 9 } : { fan: 8, ma: 8 };
+  }
+
+  // Sprite stance shift is a pure function of phase (windup -> contact ->
+  // follow), so pause/slow/replay keep ball and players in lock-step.
+  function spriteX(baseX, side, p) {
     const shot = activeShot(side, p);
     if (!shot) return baseX;
-    return baseX + (shot.contact.x - baseX) * 0.65;
+    const targetX = baseX + (shot.contact.x - baseX) * 0.65;
+    const prog = strokeProgress(shot, p);
+    if (prog && prog.stage === "windup") return baseX + (targetX - baseX) * prog.u;
+    if (prog && prog.stage === "follow") return targetX + (baseX - targetX) * prog.u;
+    return baseX;
   }
 
   // ---- Main loop ----
@@ -312,17 +321,16 @@ async function run(THREE, sceneMod, spritesMod, audioMod) {
       if (crossed) audio.playHit();
     }
 
-    // point score: increment once per point
-    if (!pointScored && phase >= POINT_END_TIME) {
-      pointScored = true;
-      if (WINNER === "blue") score.ma++; else score.fan++;
+    // score is a pure function of the timeline (8:8 -> 8:9 -> reset 8:8)
+    const s = demoScore(phase);
+    if (s.fan !== score.fan || s.ma !== score.ma) {
+      score = s;
       updateScoreboard();
     }
-    if (phase < prevPhase) pointScored = false; // wrapped into the next point
 
-    // characters: restrained lateral movement synced to their shots
-    fan.position.x += (spriteShift(RED_X, "red", phase) - fan.position.x) * Math.min(1, dt * 10);
-    ma.position.x += (spriteShift(BLUE_X, "blue", phase) - ma.position.x) * Math.min(1, dt * 10);
+    // characters: deterministic lateral movement from the same timeline
+    fan.position.x = spriteX(RED_X, "red", phase);
+    ma.position.x = spriteX(BLUE_X, "blue", phase);
 
     renderer.render(scene, camera);
     requestAnimationFrame(tick);
