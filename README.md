@@ -25,13 +25,18 @@ one click.
 The homepage hero is a real-time WebGL (Three.js via CDN ESM, no build step)
 table-tennis rally between two stylised players. Notes for maintainers:
 
-- **Prototype characters** — the players are procedural placeholder models
-  (layered-joint humanoids built from primitives), **not** final hand-drawn or
-  modelled art. No reference art or 3D models were provided, so everything is
-  generated in code — meaning there are **no external assets and no licensing
-  obligations**. The on-screen badge states this explicitly.
-- **Demo rally** — the rally is a scripted ~10 s loop (serve → rally → one
-  attack), not physics or AI. Any score is demonstrative only.
+- **Characters (2.5D preview)** — two fixed upright billboard sprites
+  (transparent full-body anime PNGs: `小胖.png` = blue Fan Zhendong near-left,
+  `马龙.png` = red/gold-dragon Ma Long far-right) standing in the 3D court. This
+  is a preview stand-in, **not** a finished 3D character or skeletal animation;
+  the procedural humanoid + rally code in `characters.js` / `rally.js` is kept
+  for a future 3D-model swap. The sprites' **drawn facing has not been visually
+  verified** (no image viewer in this environment) and are **not mirrored** — the
+  near player's back/side view is a pending asset.
+- **Demo rally** — a scripted ~10 s loop (serve → rally → one attack) exists in
+  `rally.js` but is **not animated** in the current static ready-pose preview
+  (the assets are still 2D illustrations with no motion frames). It is kept for
+  the future 3D swap.
 - **Controls** — drag/touch to orbit (limited), Pause / Slow / Reset / Sound
   buttons, keyboard `Space` `S` `R` `M` `Esc`. Sound is synthesised (WebAudio)
   and **off by default**.
