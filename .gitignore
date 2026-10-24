@@ -30,5 +30,8 @@ yarn-error.log*
 .env
 .env.*
 
-# Reference art (real-person anime portraits, source/licence unknown) — not committed
+# Reference art (real-person anime portraits & photos, source/licence unknown) — not committed
 assets/court/*.png
+assets/court/*.jpg
+assets/court/*.jpeg
+assets/court/*.webp

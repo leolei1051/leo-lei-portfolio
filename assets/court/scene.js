@@ -17,77 +17,112 @@ function canvasTexture(w, h, draw) {
   return tex;
 }
 
+function softShadowTexture() {
+  const c = document.createElement("canvas");
+  c.width = c.height = 128;
+  const ctx = c.getContext("2d");
+  const grd = ctx.createRadialGradient(64, 64, 4, 64, 64, 62);
+  grd.addColorStop(0, "rgba(0,0,0,0.45)");
+  grd.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, 0, 128, 128);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
 function makeTable() {
   const g = new THREE.Group();
   const W = TABLE.width, L = TABLE.length, H = TABLE.height;
 
-  // Surface: blue-green matte with white border + center line.
-  // Canvas u runs along X (width), v along Z (length), so the vertical
-  // w/2 line is the centre line running along the length, perpendicular to the net.
+  // Tabletop: blue-green matte with white border + centre line.
   const topTex = canvasTexture(1024, 512, (ctx, w, h) => {
     ctx.fillStyle = "#0e6e63";
     ctx.fillRect(0, 0, w, h);
     ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = 8;
-    ctx.strokeRect(20, 20, w - 40, h - 40);
+    ctx.lineWidth = 7;
+    ctx.strokeRect(16, 16, w - 32, h - 32);
     ctx.beginPath();
-    ctx.moveTo(w / 2, 20);
-    ctx.lineTo(w / 2, h - 20);
+    ctx.moveTo(w / 2, 16);
+    ctx.lineTo(w / 2, h - 16);
     ctx.stroke();
   });
   const top = new THREE.Mesh(
-    new THREE.BoxGeometry(W, 0.06, L),
-    new THREE.MeshStandardMaterial({ map: topTex, roughness: 0.65, metalness: 0.02 })
+    new THREE.BoxGeometry(W, 0.05, L),
+    new THREE.MeshStandardMaterial({ map: topTex, roughness: 0.62, metalness: 0.02 })
   );
   top.position.y = H;
   top.receiveShadow = true;
   top.castShadow = true;
   g.add(top);
 
-  // Wide dark solid base (replaces thin legs); sits on the floor.
-  const base = new THREE.Mesh(
-    new THREE.BoxGeometry(W - 0.12, H - 0.02, L - 0.12),
-    new THREE.MeshStandardMaterial({ color: 0x16181a, roughness: 0.7, metalness: 0.05 })
+  // Frame: thin dark-metal band under the top edge (small chamfer read).
+  const frame = new THREE.Mesh(
+    new THREE.BoxGeometry(W + 0.03, 0.05, L + 0.03),
+    new THREE.MeshStandardMaterial({ color: 0x1a1d20, roughness: 0.5, metalness: 0.35 })
   );
-  base.position.y = (H - 0.02) / 2;
-  base.castShadow = true;
-  base.receiveShadow = true;
-  g.add(base);
+  frame.position.y = H - 0.05;
+  frame.receiveShadow = true;
+  frame.castShadow = true;
+  g.add(frame);
 
-  // Skirt for a thicker tabletop edge.
-  const skirt = new THREE.Mesh(
-    new THREE.BoxGeometry(W - 0.02, 0.10, L - 0.02),
-    new THREE.MeshStandardMaterial({ color: 0x0c0e0f, roughness: 0.7 })
+  // Competition-style base: two pedestal legs + cross brace, with open space
+  // (replaces the previous solid box). Distinct materials for the parts.
+  const metal = new THREE.MeshStandardMaterial({ color: 0x23272b, roughness: 0.5, metalness: 0.35 });
+  const footMat = new THREE.MeshStandardMaterial({ color: 0x15181b, roughness: 0.65, metalness: 0.2 });
+
+  for (const z of [-0.7, 0.7]) {
+    const column = new THREE.Mesh(new THREE.BoxGeometry(0.30, H - 0.14, 0.30), metal);
+    column.position.set(0, (H - 0.14) / 2, z);
+    column.castShadow = true;
+    column.receiveShadow = true;
+    g.add(column);
+
+    const foot = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.07, 0.65), footMat);
+    foot.position.set(0, 0.035, z);
+    foot.castShadow = true;
+    foot.receiveShadow = true;
+    g.add(foot);
+  }
+
+  const brace = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.10, L - 0.7), metal);
+  brace.position.set(0, 0.30, 0);
+  brace.castShadow = true;
+  g.add(brace);
+
+  // Soft contact shadow under the base footprint so the table sits on the floor.
+  const shadow = new THREE.Mesh(
+    new THREE.PlaneGeometry(W + 0.5, L + 0.3),
+    new THREE.MeshBasicMaterial({ map: softShadowTexture(), transparent: true, depthWrite: false })
   );
-  skirt.position.y = H - 0.08;
-  skirt.castShadow = true;
-  skirt.receiveShadow = true;
-  g.add(skirt);
+  shadow.rotation.x = -Math.PI / 2;
+  shadow.position.y = 0.012;
+  g.add(shadow);
 
-  // Net (dark grid, spans width X) at Z = 0, with a light top band.
+  // Net: fine dark grid with a thin white top band, at Z = 0.
   const netTex = canvasTexture(256, 64, (ctx, w, h) => {
     ctx.clearRect(0, 0, w, h);
-    ctx.strokeStyle = "#2a2d30";
-    ctx.lineWidth = 2;
-    for (let x = 0; x <= w; x += 16) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
-    for (let y = 0; y <= h; y += 8) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
-    ctx.fillStyle = "#c9cdd0";
-    ctx.fillRect(0, 0, w, 4);
+    ctx.strokeStyle = "#3a4045";
+    ctx.lineWidth = 1;
+    for (let x = 0; x <= w; x += 10) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+    for (let y = 0; y <= h; y += 6) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+    ctx.fillStyle = "#d8dcdf";
+    ctx.fillRect(0, 0, w, 2);
   });
   const net = new THREE.Mesh(
     new THREE.PlaneGeometry(W + 0.16, TABLE.netHeight),
-    new THREE.MeshStandardMaterial({ map: netTex, transparent: true, alphaTest: 0.35, side: THREE.DoubleSide, roughness: 0.9 })
+    new THREE.MeshStandardMaterial({ map: netTex, transparent: true, alphaTest: 0.30, side: THREE.DoubleSide, roughness: 0.9 })
   );
   net.position.y = H + TABLE.netHeight / 2;
   net.receiveShadow = true;
   g.add(net);
 
-  // Solid net posts.
-  const postGeo = new THREE.CylinderGeometry(0.022, 0.028, TABLE.netTop + 0.06, 12);
-  const postMat = new THREE.MeshStandardMaterial({ color: 0x15171a, metalness: 0.4, roughness: 0.5 });
-  for (const px of [-(W / 2 + 0.09), (W / 2 + 0.09)]) {
+  // Slim net posts (coordinated with the fine net).
+  const postGeo = new THREE.CylinderGeometry(0.013, 0.013, TABLE.netTop + 0.04, 10);
+  const postMat = new THREE.MeshStandardMaterial({ color: 0xcfd4d8, roughness: 0.4, metalness: 0.6 });
+  for (const px of [-(W / 2 + 0.10), (W / 2 + 0.10)]) {
     const post = new THREE.Mesh(postGeo, postMat);
-    post.position.set(px, (TABLE.netTop + 0.06) / 2, 0);
+    post.position.set(px, (TABLE.netTop + 0.04) / 2, 0);
     post.castShadow = true;
     g.add(post);
   }
