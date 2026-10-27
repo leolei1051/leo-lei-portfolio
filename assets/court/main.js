@@ -1,14 +1,17 @@
 // Leo's Court — entry point. WebGL2 detection + dynamic imports (so a CDN
-// failure degrades to a static fallback), then a 2.5D table-tennis demo:
-// two anime sprites doing restrained lateral movement synced to a choreographed
-// rally, an on-screen scoreboard, and orbit/HUD controls.
+// failure degrades to a static fallback), then a table-tennis demo driven by a
+// unified timeline, with an on-screen scoreboard and orbit/HUD controls.
 //
-// Note: the sprites are single fixed-pose illustrations, so the "movement" is a
-// whole-sprite stance shift, NOT a natural swing. Skeletal/models are pending.
+// Characters: prefer real GLB models (skeleton + animation) via model-character;
+// otherwise fall back to the 2.5D sprite covers, clearly labelled as a
+// placeholder. This is "structure implemented", not a claim that a model is
+// wired or that motion is verified.
 
 import { RED_Z, BLUE_Z, RED_X, BLUE_X, ballStateAt, activeShot, strokeProgress, CONTACT_EVENTS, RALLY_DURATION, POINT_END_TIME } from "./rally.js";
 
 const THREE_URL = "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js";
+const FAN_URL = "assets/court/fan.glb"; // placeholder until a real GLB exists
+const MA_URL = "assets/court/ma.glb";   // placeholder until a real GLB exists
 
 function $(sel) { return document.querySelector(sel); }
 function $all(sel) { return Array.from(document.querySelectorAll(sel)); }
@@ -34,7 +37,7 @@ async function boot() {
     showFallback("WebGL2 unavailable");
     return;
   }
-  let THREE, sceneMod, spritesMod, audioMod;
+  let THREE, sceneMod, spritesMod, audioMod, modelMod = null;
   try {
     THREE = await import(THREE_URL);
     sceneMod = await import("./scene.js");
@@ -45,13 +48,18 @@ async function boot() {
     return;
   }
   try {
-    await run(THREE, sceneMod, spritesMod, audioMod);
+    modelMod = await import("./model-character.js");
+  } catch (e) {
+    console.warn("[court] model-character module unavailable:", e && e.message ? e.message : e);
+  }
+  try {
+    await run(THREE, sceneMod, spritesMod, audioMod, modelMod);
   } catch (e) {
     showFallback("3D setup failed: " + (e && e.message ? e.message : e));
   }
 }
 
-async function run(THREE, sceneMod, spritesMod, audioMod) {
+async function run(THREE, sceneMod, spritesMod, audioMod, modelMod) {
   const canvas = $("#court-canvas");
   if (!canvas) { showFallback("no canvas"); return; }
 
@@ -64,25 +72,50 @@ async function run(THREE, sceneMod, spritesMod, audioMod) {
   resize();
   window.addEventListener("resize", resize);
 
-  // Players (2.5D anime sprites). Fan = blue near-left, Ma = red/gold far-right.
-  const [fan, ma] = await Promise.all([
-    buildSprite("assets/court/小胖.png", { height: 1.45, fallbackColor: 0x3b6bff }),
-    buildSprite("assets/court/马龙.png", { height: 1.45, fallbackColor: 0xff3b3b }),
-  ]);
-  fan.position.set(RED_X, 0, RED_Z);
-  ma.position.set(BLUE_X, 0, BLUE_Z);
-  world.add(fan, ma);
+  // ---- Characters: real GLB models, else 2.5D sprite covers ----
+  let fanModel = null, maModel = null;
+  if (modelMod) {
+    try {
+      [fanModel, maModel] = await Promise.all([
+        modelMod.loadModelCharacter({ url: FAN_URL, paddle: modelMod.buildPaddleMesh(0x3b6bff) }),
+        modelMod.loadModelCharacter({ url: MA_URL, paddle: modelMod.buildPaddleMesh(0xff3b3b) }),
+      ]);
+    } catch (e) {
+      fanModel = maModel = null;
+    }
+  }
+  const modelMode = !!(fanModel && maModel);
+
+  let fan, ma;
+  if (modelMode) {
+    fan = fanModel; ma = maModel;
+    fan.root.position.set(RED_X, 0, RED_Z);
+    ma.root.position.set(BLUE_X, 0, BLUE_Z);
+    fan.root.rotation.y = Math.PI / 2;   // Fan (near) faces -Z toward the net
+    ma.root.rotation.y = -Math.PI / 2;   // Ma (far) faces +Z toward the net
+    world.add(fan.root, ma.root);
+    fan.play("idle"); ma.play("idle");
+  } else {
+    fan = await buildSprite("assets/court/小胖.png", { height: 1.45, fallbackColor: 0x3b6bff });
+    ma = await buildSprite("assets/court/马龙.png", { height: 1.45, fallbackColor: 0xff3b3b });
+    fan.position.set(RED_X, 0, RED_Z);
+    ma.position.set(BLUE_X, 0, BLUE_Z);
+    world.add(fan, ma);
+  }
 
   // ---- Camera / orbit state ----
-  const camTarget = new THREE.Vector3(0, 0.75, 0);
+  // Model mode: follow the near player (side-rear-top). Sprite fallback: table centre.
+  const EYE_HEIGHT = 1.0;
+  const anchor = new THREE.Vector3(0, 0.75, 0);
+  const anchorTarget = new THREE.Vector3(0, 0.75, 0);
   const isMobile = window.matchMedia("(max-width: 640px)").matches;
   const REST = isMobile
-    ? { theta: 0.10, phi: 1.05, radius: 8.0 }
-    : { theta: 0.103, phi: 1.130, radius: 6.45 };
-  const INTRO_START = { theta: 0.02, phi: 1.32, radius: 7.4 };
+    ? { theta: 0.10, phi: 1.05, radius: modelMode ? 5.6 : 8.0 }
+    : { theta: 0.10, phi: 1.12, radius: modelMode ? 4.4 : 6.45 };
+  const INTRO_START = { theta: 0.02, phi: 1.30, radius: modelMode ? 6.2 : 7.4 };
   const LIMITS = isMobile
-    ? { theta: [-0.22, 0.22], phi: [0.95, 1.20], radius: [7.2, 9.0] }
-    : { theta: [-0.22, 0.22], phi: [1.00, 1.26], radius: [5.6, 7.3] };
+    ? { theta: [-0.24, 0.24], phi: [0.95, 1.25], radius: modelMode ? [4.8, 7.0] : [7.2, 9.0] }
+    : { theta: [-0.24, 0.24], phi: [1.00, 1.28], radius: modelMode ? [3.6, 5.6] : [5.6, 7.3] };
 
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const cam = {
@@ -102,11 +135,11 @@ async function run(THREE, sceneMod, spritesMod, audioMod) {
   function applyCamera() {
     const { theta, phi, radius } = cam;
     camera.position.set(
-      camTarget.x + radius * Math.sin(phi) * Math.sin(theta),
-      camTarget.y + radius * Math.cos(phi),
-      camTarget.z + radius * Math.sin(phi) * Math.cos(theta)
+      anchor.x + radius * Math.sin(phi) * Math.sin(theta),
+      anchor.y + radius * Math.cos(phi),
+      anchor.z + radius * Math.sin(phi) * Math.cos(theta)
     );
-    camera.lookAt(camTarget);
+    camera.lookAt(anchor);
   }
   applyCamera();
 
@@ -130,6 +163,7 @@ async function run(THREE, sceneMod, spritesMod, audioMod) {
   const btnReplay = $("#btn-reset");
   const btnSound = $("#btn-sound");
   const modal = $("#court-modal");
+  const badge = $(".court-badge");
 
   function setPaused(p) {
     paused = p;
@@ -153,6 +187,14 @@ async function run(THREE, sceneMod, spritesMod, audioMod) {
     if (srv) srv.textContent = "樊振东"; // fixed server in this demo choreography
   }
 
+  function updateBadge() {
+    if (badge) {
+      badge.textContent = modelMode
+        ? "3D 骨骼角色 · 演示比分（非真实数据）"
+        : "3D 模型未接入 · 显示立绘占位（演示比分，非真实数据）";
+    }
+  }
+
   function replay() {
     phase = 0;
     setPaused(false);
@@ -164,6 +206,7 @@ async function run(THREE, sceneMod, spritesMod, audioMod) {
   if (btnReplay) btnReplay.addEventListener("click", replay);
   if (btnSound) btnSound.addEventListener("click", () => setSound(!audio.enabled));
   updateScoreboard();
+  updateBadge();
 
   // Hotspots -> modal
   const PANELS = {
@@ -279,15 +322,11 @@ async function run(THREE, sceneMod, spritesMod, audioMod) {
     }
   });
 
-  // Score is a pure function of the timeline: 8:8 during the rally, 8:9 after
-  // the choreographed winner, back to 8:8 when the loop restarts. No accumulation
-  // — replay/loop always land on the same demo score.
+  // ---- Timeline-driven helpers ----
   function demoScore(p) {
     return p >= POINT_END_TIME ? { fan: 8, ma: 9 } : { fan: 8, ma: 8 };
   }
 
-  // Sprite stance shift is a pure function of phase (windup -> contact ->
-  // follow), so pause/slow/replay keep ball and players in lock-step.
   function spriteX(baseX, side, p) {
     const shot = activeShot(side, p);
     if (!shot) return baseX;
@@ -296,6 +335,22 @@ async function run(THREE, sceneMod, spritesMod, audioMod) {
     if (prog && prog.stage === "windup") return baseX + (targetX - baseX) * prog.u;
     if (prog && prog.stage === "follow") return targetX + (baseX - targetX) * prog.u;
     return baseX;
+  }
+
+  // Placeholder clip mapping (uncalibrated until real clip durations exist).
+  function poseFor(side, p) {
+    const shot = activeShot(side, p);
+    if (!shot) return { clip: "idle", loop: true };
+    const prog = strokeProgress(shot, p);
+    if (!prog) return { clip: "idle", loop: true };
+    if (prog.stage === "windup") return { clip: "windup", loop: false };
+    return prog.u < 0.35 ? { clip: "swing", loop: false } : { clip: "follow", loop: false };
+  }
+  function applyPose(char, pose) {
+    if (!char || !char.play) return;
+    if (char._clip === pose.clip) return;
+    char._clip = pose.clip;
+    char.play(pose.clip, { loop: pose.loop });
   }
 
   // ---- Main loop ----
@@ -310,6 +365,15 @@ async function run(THREE, sceneMod, spritesMod, audioMod) {
       cam.phi = INTRO_START.phi + (REST.phi - INTRO_START.phi) * e;
       cam.radius = INTRO_START.radius + (REST.radius - INTRO_START.radius) * e;
     }
+
+    // anchor: near player in model mode, table centre otherwise
+    if (modelMode) {
+      fan.root.getWorldPosition(anchorTarget);
+      anchorTarget.y += EYE_HEIGHT;
+    } else {
+      anchorTarget.set(0, 0.75, 0);
+    }
+    anchor.lerp(anchorTarget, 1 - Math.exp(-8 * dt));
     applyCamera();
 
     // advance timeline (play/pause/slow control the same clock)
@@ -335,9 +399,17 @@ async function run(THREE, sceneMod, spritesMod, audioMod) {
       updateScoreboard();
     }
 
-    // characters: deterministic lateral movement from the same timeline
-    fan.position.x = spriteX(RED_X, "red", phase);
-    ma.position.x = spriteX(BLUE_X, "blue", phase);
+    // characters: model animation, or sprite shift in fallback
+    if (modelMode) {
+      const dtAnim = paused ? 0 : dt * (slow ? 0.3 : 1);
+      applyPose(fan, poseFor("red", phase));
+      applyPose(ma, poseFor("blue", phase));
+      fan.update(dtAnim);
+      ma.update(dtAnim);
+    } else {
+      fan.position.x = spriteX(RED_X, "red", phase);
+      ma.position.x = spriteX(BLUE_X, "blue", phase);
+    }
 
     renderer.render(scene, camera);
     requestAnimationFrame(tick);

@@ -25,18 +25,18 @@ one click.
 The homepage hero is a real-time WebGL (Three.js via CDN ESM, no build step)
 table-tennis rally between two stylised players. Notes for maintainers:
 
-- **Characters (2.5D preview)** — two fixed upright billboard sprites
-  (transparent full-body anime PNGs: `小胖.png` = blue Fan Zhendong near-left,
-  `马龙.png` = red/gold-dragon Ma Long far-right) standing in the 3D court. This
-  is a preview stand-in, **not** a finished 3D character or skeletal animation;
-  the procedural humanoid + rally code in `characters.js` / `rally.js` is kept
-  for a future 3D-model swap. The sprites' **drawn facing has not been visually
-  verified** (no image viewer in this environment) and are **not mirrored** — the
-  near player's back/side view is a pending asset.
-- **Demo rally** — a scripted ~10 s loop (serve → rally → one attack) exists in
-  `rally.js` but is **not animated** in the current static ready-pose preview
-  (the assets are still 2D illustrations with no motion frames). It is kept for
-  the future 3D swap.
+- **Characters** — `model-character.js` loads a GLB/GLTF (skinned mesh + bones +
+  animation clips) via GLTFLoader + AnimationMixer, attaches a paddle to a named
+  hand bone, and exposes the paddle's world position for contact checks. **No 3D
+  model asset exists yet**, so the site falls back to fixed upright 2.5D billboard
+  sprites (`小胖.png` = blue Fan near-left, `马龙.png` = red/gold Ma far-right) and
+  labels the fallback honestly ("3D 模型未接入 · 显示立绘占位"). See the roadmap
+  below for the three acceptance tiers and the missing assets.
+- **Demo rally** — a scripted ~10 s loop (serve → rally → one winner) on a unified
+  timeline in `rally.js`. Ball and characters are pure functions of the phase, so
+  pause/slow/replay keep everything in lock-step; the score is a pure function too
+  (8:8 → 8:9 → 8:8). With only 2D sprites the "movement" is a restrained whole-sprite
+  shift, not a natural swing.
 - **Controls** — drag/touch to orbit (limited), Pause / Slow / Reset / Sound
   buttons, keyboard `Space` `S` `R` `M` `Esc`. Sound is synthesised (WebAudio)
   and **off by default**.
@@ -44,6 +44,23 @@ table-tennis rally between two stylised players. Notes for maintainers:
   degrades to a static block; all content and navigation remain reachable.
 - **Local preview** — ES modules need HTTP, so use `python -m http.server`
   (opening `index.html` via `file://` shows the static fallback, not the 3D).
+
+## 3D character roadmap (acceptance tiers)
+
+1. **structure-implemented (current)** — model loading / AnimationMixer playback /
+   hand-bone attachment / third-person follow camera / paddle world-position query
+   are implemented. The page falls back to the sprite cover and labels it honestly.
+2. **model-wired** — a real GLB (skeleton + skinning + clips) loads and plays, the
+   paddle follows the hand bone, the third-person camera frames the real character.
+3. **motion-verified** — shoulder/elbow/wrist pose visibly changes, clothing deforms
+   with the bones, the paddle follows the hand, and the paddle's world position
+   aligns with the ball-contact points (`?debug=contact`).
+
+**Missing assets:** a rigged + skinned GLB/GLTF (one character first), animation clips
+(`idle`, `ready`, `windup`, `swing`, `follow`, `recover` — later `side-step`, `serve`,
+`backhand`), the racket-hand bone name (default `mixamorigRightHand`), and optionally a
+paddle model. Drop them as `assets/court/fan.glb` / `ma.glb` to switch the site into
+model mode.
 
 ## Project structure
 
